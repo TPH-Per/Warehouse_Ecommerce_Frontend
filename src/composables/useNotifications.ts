@@ -100,6 +100,10 @@ export const useNotifications = () => {
     }
   };
 
+  const notifyPromotionExpiring = (promotionName: string, expiryDate: string) => {
+    return notificationStore.notifyPromotionExpiring(promotionName, expiryDate);
+  };
+
   // Notification actions
   const markAsRead = (notificationId: string) => {
     notificationStore.markAsRead(notificationId);
@@ -140,6 +144,9 @@ export const useNotifications = () => {
     notificationsByCategory,
     priorityNotifications,
     
+    // Core notification creation
+    createNotification: notificationStore.createNotification,
+    
     // Toast functions
     showToast,
     showSuccess,
@@ -153,6 +160,7 @@ export const useNotifications = () => {
     notifyManagerNewReview,
     notifyCustomerOrderStatus,
     notifyCustomerPriceDrop,
+    notifyPromotionExpiring,
     
     // Actions
     markAsRead,
