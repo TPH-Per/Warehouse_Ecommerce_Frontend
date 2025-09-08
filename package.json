@@ -1,0 +1,31 @@
+{
+  "name": "anime-figure-shop",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^9.3.0",
+    "@vueuse/core": "^13.0.0",
+    "@vueuse/motion": "^3.0.3",
+    "echarts": "^5.5.1",
+    "lucide-vue-next": "^0.511.0",
+    "pinia": "^3.0.3",
+    "vue": "^3.5.15",
+    "vue-echarts": "^7.0.1",
+    "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vue-tsc": "^2.2.10"
+  }
+}
