@@ -201,10 +201,17 @@ export interface AnalyticsData {
 export interface Sensor {
   id: string;
   zoneId: string;
+  zoneName?: string;
   type: 'temperature' | 'humidity';
   status: 'online' | 'offline' | 'alert';
   lastReading: number;
   lastReadingTimestamp: string;
+}
+
+export interface SensorAlertRule {
+  sensorId: string;
+  min?: number;
+  max?: number;
 }
 
 export interface AuditLog {
