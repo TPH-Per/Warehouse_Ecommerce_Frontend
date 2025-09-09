@@ -45,7 +45,7 @@
         </div>
 
         <!-- Filters Row -->
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
           <select v-model="filters.category" class="form-select">
             <option value="">All Categories</option>
             <option value="figure">Figures</option>
@@ -75,6 +75,13 @@
             <option value="">All Items</option>
             <option value="exclusive">Exclusive</option>
             <option value="limited-edition">Limited Edition</option>
+          </select>
+
+          <select v-model="filters.availability" class="form-select">
+            <option value="">All Availability</option>
+            <option value="in-stock">In-Stock</option>
+            <option value="pre-order">Pre-Order</option>
+            <option value="out-of-stock">Out-of-Stock</option>
           </select>
 
           <!-- Sort -->
@@ -148,6 +155,7 @@ const filters = ref({
   scale: '',
   condition: '',
   exclusivity: '',
+  availability: '',
   priceRange: '',
 });
 
@@ -169,6 +177,7 @@ const filteredProducts = computed(() => {
     if (filters.value.scale && product.scale !== filters.value.scale) return false;
     if (filters.value.condition && product.condition !== filters.value.condition) return false;
     if (filters.value.exclusivity && !product.tags.includes(filters.value.exclusivity)) return false;
+    if (filters.value.availability && product.availability !== filters.value.availability) return false;
     return true;
   });
 
@@ -234,11 +243,24 @@ watch(() => route.query, (newQuery) => {
   if (newQuery.search) {
     searchQuery.value = newQuery.search as string;
   }
+  if (newQuery.availability) {
+    filters.value.availability = newQuery.availability as string;
+  }
 }, { immediate: true });
 
 // Reset page when filters change
 watch([searchQuery, filters], () => {
   currentPage.value = 1;
+}, { deep: true });
+
+// Persist availability filter in query string
+watch(filters, (newFilters) => {
+  router.replace({
+    query: {
+      ...route.query,
+      availability: newFilters.availability || undefined,
+    },
+  });
 }, { deep: true });
 
 onMounted(() => {
@@ -248,6 +270,9 @@ onMounted(() => {
   }
   if (urlParams.get('category')) {
     filters.value.category = urlParams.get('category') || '';
+  }
+  if (urlParams.get('availability')) {
+    filters.value.availability = urlParams.get('availability') || '';
   }
 });
 </script>
