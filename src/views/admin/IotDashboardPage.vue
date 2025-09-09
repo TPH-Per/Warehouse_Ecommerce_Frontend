@@ -19,10 +19,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { generateMockSensors } from '@/data/mockData';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { startSensorPolling } from '@/services/iotService';
+import type { Sensor } from '@/types';
 
-const sensors = ref(generateMockSensors(8));
+const sensors = ref<Sensor[]>([]);
+let stopPolling: (() => void) | null = null;
+
+onMounted(() => {
+  stopPolling = startSensorPolling(data => (sensors.value = data));
+});
+
+onUnmounted(() => {
+  if (stopPolling) stopPolling();
+});
 
 const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {

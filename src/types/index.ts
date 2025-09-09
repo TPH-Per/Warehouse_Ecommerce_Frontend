@@ -249,3 +249,13 @@ zone: string;
   available: number;
   reorderPoint: number;
 }
+
+export interface ShippingRate {
+  id?: string;
+  zoneName: string;
+  city?: string;
+  country?: string;
+  base_cost: number;
+  per_kg_cost: number;
+  express_multiplier: number;
+}

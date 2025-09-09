@@ -50,7 +50,14 @@
             </div>
             
             <div class="flex items-center space-x-3">
-              <button 
+              <button
+                v-if="['pending','confirmed'].includes(order.status)"
+                @click="cancelOrder(order)"
+                class="btn btn-outline text-sm text-red-600 border-red-600 hover:bg-red-50"
+              >
+                Cancel Order
+              </button>
+              <button
                 @click="toggleOrderDetails(order.id)"
                 class="btn btn-outline text-sm"
               >
@@ -104,6 +111,7 @@ import { Package, Truck } from 'lucide-vue-next';
 import { allOrders } from '@/data/mockData';
 import type { Order, Shipment } from '@/types';
 import TrackingModal from '@/components/TrackingModal.vue';
+import { NotificationService } from '@/services/notificationService';
 
 const orders = ref<Order[]>(allOrders);
 const statusFilter = ref('');
@@ -111,6 +119,7 @@ const expandedOrders = ref<string[]>([]);
 
 const isTrackingModalOpen = ref(false);
 const selectedShipment = ref<Shipment | null>(null);
+const notificationService = NotificationService.getInstance();
 
 const filteredOrders = computed(() => {
   if (!statusFilter.value) return orders.value;
@@ -154,6 +163,18 @@ const toggleOrderDetails = (orderId: string) => {
 const openTrackingModal = (shipment: Shipment) => {
   selectedShipment.value = shipment;
   isTrackingModalOpen.value = true;
+};
+
+const cancelOrder = async (order: Order) => {
+  if (!confirm('Cancel this order?')) return;
+  try {
+    const res = await fetch(`/api/orders/${order.id}/cancel`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to cancel');
+    order.status = 'cancelled';
+    notificationService.notifyOrderStatusChange(order, 'cancelled');
+  } catch (err) {
+    alert('Unable to cancel order');
+  }
 };
 </script>
 

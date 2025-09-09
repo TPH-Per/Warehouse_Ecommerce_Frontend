@@ -202,9 +202,12 @@
               <span class="text-gray-900">¥{{ cartTotal.toLocaleString() }}</span>
             </div>
             
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Shipping</span>
-              <span class="text-gray-900">¥{{ estimatedShipping.toLocaleString() }}</span>
+            <div class="flex justify-between text-sm items-center">
+              <label class="text-gray-600 flex items-center">
+                <input type="checkbox" v-model="expressShipping" class="mr-2" />
+                Express
+              </label>
+              <span class="text-gray-900">¥{{ shippingCost.toLocaleString() }}</span>
             </div>
             
             <div class="flex justify-between text-sm">
@@ -259,12 +262,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { CreditCard, Smartphone, Shield, Loader, Wallet } from 'lucide-vue-next';
 import { useCart } from '@/composables/useCart';
 import { allProducts } from '@/data/mockData';
 import type { Address } from '@/types';
+import { getShippingCost, clearShippingCache } from '@/services/shippingService';
 
 const router = useRouter();
 const { cartItems, cartTotal, clearCart } = useCart();
@@ -294,24 +298,33 @@ const cartItemsWithProducts = computed(() => {
     };
   }).filter(item => item.product);
 });
+const expressShipping = ref(false);
+const shippingCost = ref(0);
+const totalWeight = computed(() =>
+  cartItemsWithProducts.value.reduce((sum, item) =>
+    sum + item.product.weight_kg * item.quantity,
+  0)
+);
 
-const estimatedShipping = computed(() => {
-  const totalWeight = cartItemsWithProducts.value.reduce((sum, item) => 
-    sum + (item.product.weight_kg * item.quantity), 0
-  );
-  
-  if (totalWeight <= 1) return 500;
-  if (totalWeight <= 3) return 800;
-  if (totalWeight <= 5) return 1200;
-  return 1500;
-});
+const updateShipping = async () => {
+  const dest = {
+    zoneName: 'default',
+    country: shippingAddress.value.country,
+    city: shippingAddress.value.city,
+  };
+  shippingCost.value = await getShippingCost(dest, totalWeight.value, expressShipping.value);
+};
+
+watch([totalWeight, () => shippingAddress.value.country, () => shippingAddress.value.city, expressShipping], updateShipping, { immediate: true });
+
+watch(() => shippingAddress.value.country, clearShippingCache);
 
 const estimatedTax = computed(() => {
   return Math.round(cartTotal.value * 0.1); // 10% tax
 });
 
 const orderTotal = computed(() => {
-  return cartTotal.value + estimatedShipping.value + estimatedTax.value;
+  return cartTotal.value + shippingCost.value + estimatedTax.value;
 });
 
 const canPlaceOrder = computed(() => {
