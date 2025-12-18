@@ -1,81 +1,254 @@
-# Vuetify (Default)
+<p align="center">
+  <img src="https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white" alt="Vue.js">
+  <img src="https://img.shields.io/badge/Vuetify-3.10-1867C0?style=for-the-badge&logo=vuetify&logoColor=white" alt="Vuetify">
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-7.1-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/Pinia-3.0-FFDA44?style=for-the-badge&logo=pinia&logoColor=black" alt="Pinia">
+</p>
 
-This is the official scaffolding tool for Vuetify, designed to give you a head start in building your new Vuetify application. It sets up a base template with all the necessary configurations and standard directory structure, enabling you to begin development without the hassle of setting up the project from scratch.
+<h1 align="center">🎌 Wibu Shop</h1>
 
-## ❗️ Important Links
+<p align="center">
+  <strong>Website thương mại điện tử chuyên bán đồ Anime & Figures</strong>
+</p>
 
-- 📄 [Docs](https://vuetifyjs.com/)
-- 🚨 [Issues](https://issues.vuetifyjs.com/)
-- 🏬 [Store](https://store.vuetifyjs.com/)
-- 🎮 [Playground](https://play.vuetifyjs.com/)
-- 💬 [Discord](https://community.vuetifyjs.com)
+<p align="center">
+  <em>Nơi hội tụ đam mê Anime - Mang đến những sản phẩm Figure, Nendoroid, Plushies chất lượng nhất!</em>
+</p>
 
-## 💿 Install
+---
 
-Set up your project using your preferred package manager. Use the corresponding command to install the dependencies:
+## � Giới thiệu
 
-| Package Manager                                                | Command        |
-|---------------------------------------------------------------|----------------|
-| [yarn](https://yarnpkg.com/getting-started)                   | `yarn install` |
-| [npm](https://docs.npmjs.com/cli/v7/commands/npm-install)     | `npm install`  |
-| [pnpm](https://pnpm.io/installation)                          | `pnpm install` |
-| [bun](https://bun.sh/#getting-started)                        | `bun install`  |
+**Wibu Shop** là một ứng dụng web thương mại điện tử hiện đại được xây dựng bằng Vue 3 và Vuetify 3, chuyên cung cấp các sản phẩm liên quan đến Anime như:
 
-After completing the installation, your environment is ready for Vuetify development.
+- 🎭 **Figures** - Mô hình nhân vật Anime cao cấp
+- 🐣 **Nendoroids** - Mô hình chibi đáng yêu
+- 🧸 **Plushies** - Gấu bông nhân vật Anime
+- 🤖 **Figma** - Mô hình có khớp chuyển động
 
-## ✨ Features
+## ✨ Tính năng chính
 
-- 🖼️ **Optimized Front-End Stack**: Leverage the latest Vue 3 and Vuetify 3 for a modern, reactive UI development experience. [Vue 3](https://v3.vuejs.org/) | [Vuetify 3](https://vuetifyjs.com/en/)
-- 🗃️ **State Management**: Integrated with [Pinia](https://pinia.vuejs.org/), the intuitive, modular state management solution for Vue.
-- 🚦 **Routing and Layouts**: Utilizes Vue Router for SPA navigation and vite-plugin-vue-layouts-next for organizing Vue file layouts. [Vue Router](https://router.vuejs.org/) | [vite-plugin-vue-layouts-next](https://github.com/loicduong/vite-plugin-vue-layouts-next)
-- 💻 **Enhanced Development Experience**: Benefit from TypeScript's static type checking and the ESLint plugin suite for Vue, ensuring code quality and consistency. [TypeScript](https://www.typescriptlang.org/) | [ESLint Plugin Vue](https://eslint.vuejs.org/)
-- ⚡ **Next-Gen Tooling**: Powered by Vite, experience fast cold starts and instant HMR (Hot Module Replacement). [Vite](https://vitejs.dev/)
-- 🧩 **Automated Component Importing**: Streamline your workflow with unplugin-vue-components, automatically importing components as you use them. [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)
-- 🛠️ **Strongly-Typed Vue**: Use vue-tsc for type-checking your Vue components, and enjoy a robust development experience. [vue-tsc](https://github.com/johnsoncodehk/volar/tree/master/packages/vue-tsc)
+| Tính năng | Mô tả |
+|-----------|-------|
+| 🏠 **Trang chủ** | Hiển thị sản phẩm nổi bật, banner quảng cáo |
+| 🔍 **Tìm kiếm** | Tìm kiếm sản phẩm theo từ khóa |
+| 📂 **Danh mục** | Phân loại sản phẩm theo danh mục |
+| 🛒 **Giỏ hàng** | Quản lý sản phẩm trong giỏ hàng |
+| ❤️ **Wishlist** | Lưu sản phẩm yêu thích |
+| 🔔 **Thông báo** | Thông báo real-time cho người dùng |
+| 👤 **Tài khoản** | Đăng ký, đăng nhập, quản lý hồ sơ |
+| 📦 **Đơn hàng** | Theo dõi trạng thái đơn hàng |
+| 🌓 **Dark Mode** | Hỗ trợ chế độ sáng/tối |
+| 📱 **Responsive** | Tương thích mọi kích thước màn hình |
 
-These features are curated to provide a seamless development experience from setup to deployment, ensuring that your Vuetify application is both powerful and maintainable.
+## 🚀 Công nghệ sử dụng
 
-## 💡 Usage
+### Frontend Stack
 
-This section covers how to start the development server and build your project for production.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      WIBU SHOP STACK                        │
+├─────────────────────────────────────────────────────────────┤
+│  🖼️  Vue 3.5          │  Framework chính                    │
+│  🎨  Vuetify 3.10     │  UI Component Library               │
+│  📝  TypeScript 5.9   │  Type-safe development              │
+│  ⚡  Vite 7.1         │  Build tool & Dev server            │
+│  🗃️  Pinia 3.0        │  State Management                   │
+│  🚦  Vue Router 4.5   │  SPA Routing                        │
+│  🎭  MDI Icons        │  Material Design Icons              │
+│  ✍️  Roboto Font      │  Typography                         │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### Starting the Development Server
+### Công cụ phát triển
 
-To start the development server with hot-reload, run the following command. The server will be accessible at [http://localhost:3000](http://localhost:3000):
+- **ESLint** - Code linting & formatting
+- **vue-tsc** - TypeScript type checking
+- **unplugin-vue-components** - Auto import components
+- **vite-plugin-vue-layouts-next** - Layout management
+- **sass-embedded** - SCSS preprocessing
+
+## 📁 Cấu trúc dự án
+
+```
+wibu-shop/
+├── 📂 public/              # Static assets
+├── 📂 src/
+│   ├── 📂 assets/          # Images, fonts, media
+│   ├── 📂 components/      # Vue components
+│   │   ├── AppHeader.vue   # Header navigation
+│   │   └── AppFooter.vue   # Footer component
+│   ├── 📂 composables/     # Vue composables (hooks)
+│   │   ├── useAuth.ts      # Authentication logic
+│   │   ├── useCart.ts      # Cart management
+│   │   ├── useWishlist.ts  # Wishlist management
+│   │   ├── useTheme.ts     # Theme switching
+│   │   └── useNotifications.ts
+│   ├── � layouts/         # Page layouts
+│   │   ├── home.vue        # Home page layout
+│   │   └── product-detail.vue
+│   ├── 📂 pages/           # Route pages
+│   │   ├── HomePage.vue    # Trang chủ
+│   │   └── ProductDetailPage.vue
+│   ├── 📂 plugins/         # Vue plugins
+│   ├── 📂 router/          # Vue Router config
+│   ├── 📂 stores/          # Pinia stores
+│   ├── 📂 styles/          # Global styles
+│   ├── App.vue             # Root component
+│   └── main.ts             # Entry point
+├── 📄 index.html           # HTML entry
+├── 📄 package.json         # Dependencies
+├── 📄 vite.config.mts      # Vite configuration
+├── 📄 tsconfig.json        # TypeScript config
+└── 📄 eslint.config.js     # ESLint config
+```
+
+## � Cài đặt
+
+### Yêu cầu hệ thống
+
+- **Node.js** >= 18.0.0
+- **npm** >= 9.0.0 hoặc **yarn** >= 1.22.0
+
+### Các bước cài đặt
+
+1️⃣ **Clone repository**
 
 ```bash
+git clone https://github.com/your-username/wibu-shop.git
+cd wibu-shop
+```
+
+2️⃣ **Cài đặt dependencies**
+
+```bash
+# Sử dụng npm
+npm install
+
+# Hoặc sử dụng yarn
+yarn install
+
+# Hoặc sử dụng pnpm
+pnpm install
+```
+
+3️⃣ **Chạy development server**
+
+```bash
+# Sử dụng npm
+npm run dev
+
+# Hoặc sử dụng yarn
 yarn dev
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+4️⃣ **Mở trình duyệt**
 
-> Add NODE_OPTIONS='--no-warnings' to suppress the JSON import warnings that happen as part of the Vuetify import mapping. If you are on Node [v21.3.0](https://nodejs.org/en/blog/release/v21.3.0) or higher, you can change this to NODE_OPTIONS='--disable-warning=5401'. If you don't mind the warning, you can remove this from your package.json dev script.
+Truy cập 👉 [http://localhost:5173](http://localhost:5173)
 
-### Building for Production
+## 📜 Scripts có sẵn
 
-To build your project for production, use:
+| Script | Mô tả |
+|--------|-------|
+| `npm run dev` | Khởi chạy development server với HMR |
+| `npm run build` | Build production với type-check |
+| `npm run preview` | Preview production build |
+| `npm run type-check` | Kiểm tra TypeScript types |
+| `npm run lint` | Lint và fix code với ESLint |
+
+## 🏗️ Build Production
 
 ```bash
-yarn build
+# Build ứng dụng
+npm run build
+
+# Preview bản build
+npm run preview
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+Sau khi build, thư mục `dist/` sẽ chứa các file tĩnh sẵn sàng deploy.
 
-Once the build process is completed, your application will be ready for deployment in a production environment.
+## 🎨 Customization
 
-## 💪 Support Vuetify Development
+### Thay đổi Theme
 
-This project is built with [Vuetify](https://vuetifyjs.com/en/), a UI Library with a comprehensive collection of Vue components. Vuetify is an MIT licensed Open Source project that has been made possible due to the generous contributions by our [sponsors and backers](https://vuetifyjs.com/introduction/sponsors-and-backers/). If you are interested in supporting this project, please consider:
+Vuetify theme có thể được tùy chỉnh tại `src/plugins/vuetify.ts`:
 
-- [Requesting Enterprise Support](https://support.vuetifyjs.com/)
-- [Sponsoring John on Github](https://github.com/users/johnleider/sponsorship)
-- [Sponsoring Kael on Github](https://github.com/users/kaelwd/sponsorship)
-- [Supporting the team on Open Collective](https://opencollective.com/vuetify)
-- [Becoming a sponsor on Patreon](https://www.patreon.com/vuetify)
-- [Becoming a subscriber on Tidelift](https://tidelift.com/subscription/npm/vuetify)
-- [Making a one-time donation with Paypal](https://paypal.me/vuetify)
+```typescript
+const vuetify = createVuetify({
+  theme: {
+    defaultTheme: 'light',
+    themes: {
+      light: {
+        colors: {
+          primary: '#3b82f6',
+          secondary: '#ec4899',
+          // ...
+        },
+      },
+    },
+  },
+})
+```
 
-## 📑 License
-[MIT](http://opensource.org/licenses/MIT)
+### Thêm Components mới
 
-Copyright (c) 2016-present Vuetify, LLC
+1. Tạo file `.vue` trong `src/components/`
+2. Component sẽ tự động được import nhờ `unplugin-vue-components`
+
+## 🤝 Đóng góp
+
+Chúng tôi hoan nghênh mọi đóng góp! Vui lòng:
+
+1. Fork repository
+2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Mở Pull Request
+
+## 👥 Tác giả
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Wibu Shop Team</strong><br>
+      <em>Đồ án Lập trình Web</em>
+    </td>
+  </tr>
+</table>
+
+## 📞 Liên hệ
+
+- 📧 Email: contact@wibushop.com
+- 🌐 Website: [wibushop.com](https://wibushop.com)
+- 📱 Hotline: 1900-xxxx
+
+## 📄 License
+
+```
+MIT License
+
+Copyright (c) 2024 Wibu Shop
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
+
+---
+
+<p align="center">
+  Made with ❤️ by <strong>Wibu Shop Team</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/status-active-success?style=flat-square" alt="Status">
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs Welcome">
+</p>
