@@ -21,8 +21,12 @@ declare module 'vue-router/auto-routes' {
     '/CartPage': RouteRecordInfo<'/CartPage', '/CartPage', Record<never, never>, Record<never, never>>,
     '/CheckoutPage': RouteRecordInfo<'/CheckoutPage', '/CheckoutPage', Record<never, never>, Record<never, never>>,
     '/HomePage': RouteRecordInfo<'/HomePage', '/HomePage', Record<never, never>, Record<never, never>>,
+    '/LoginPage': RouteRecordInfo<'/LoginPage', '/LoginPage', Record<never, never>, Record<never, never>>,
+    '/OrderPage': RouteRecordInfo<'/OrderPage', '/OrderPage', Record<never, never>, Record<never, never>>,
     '/ProductDetailPage': RouteRecordInfo<'/ProductDetailPage', '/ProductDetailPage', Record<never, never>, Record<never, never>>,
     '/ProductListPage': RouteRecordInfo<'/ProductListPage', '/ProductListPage', Record<never, never>, Record<never, never>>,
+    '/ProfilePage': RouteRecordInfo<'/ProfilePage', '/ProfilePage', Record<never, never>, Record<never, never>>,
+    '/RegisterPage': RouteRecordInfo<'/RegisterPage', '/RegisterPage', Record<never, never>, Record<never, never>>,
     '/WishListPage': RouteRecordInfo<'/WishListPage', '/WishListPage', Record<never, never>, Record<never, never>>,
   }
 
@@ -49,12 +53,28 @@ declare module 'vue-router/auto-routes' {
       routes: '/HomePage'
       views: never
     }
+    'src/pages/LoginPage.vue': {
+      routes: '/LoginPage'
+      views: never
+    }
+    'src/pages/OrderPage.vue': {
+      routes: '/OrderPage'
+      views: never
+    }
     'src/pages/ProductDetailPage.vue': {
       routes: '/ProductDetailPage'
       views: never
     }
     'src/pages/ProductListPage.vue': {
       routes: '/ProductListPage'
+      views: never
+    }
+    'src/pages/ProfilePage.vue': {
+      routes: '/ProfilePage'
+      views: never
+    }
+    'src/pages/RegisterPage.vue': {
+      routes: '/RegisterPage'
       views: never
     }
     'src/pages/WishListPage.vue': {

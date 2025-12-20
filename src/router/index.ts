@@ -13,6 +13,21 @@ import { setupLayouts } from 'virtual:generated-layouts'
 // import { routes } from 'vue-router/auto-routes'
 
 const routes = [
+  // Route Login - Không dùng layout (full page)
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/pages/LoginPage.vue'),
+    meta: { guest: true } // Chỉ cho guest truy cập
+  },
+  // Route Register
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/pages/RegisterPage.vue'),
+    meta: { guest: true }
+  },
+  // Routes chính với layout
   {
     path: '/',
     name: 'HomePage',
@@ -47,6 +62,16 @@ const routes = [
         path: '/checkout',
         name: 'Checkout',
         component: () => import('@/pages/CheckoutPage.vue')
+      },
+      {
+        path: '/profile',
+        name: 'Profile',
+        component: () => import('@/pages/ProfilePage.vue')
+      },
+      {
+        path: '/order',
+        name: 'Order',
+        component: () => import('@/pages/OrderPage.vue')
       }
     ]
   }

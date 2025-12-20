@@ -106,13 +106,13 @@
         </template>
         <v-list class="neon-dropdown" rounded="lg" min-width="180" elevation="16">
           <v-list-item to="/profile" title="Hồ sơ" prepend-icon="mdi-account-circle" class="dropdown-item" />
-          <v-list-item to="/orders" title="Đơn hàng" prepend-icon="mdi-package-variant" class="dropdown-item" />
+          <v-list-item to="/order" title="Đơn hàng" prepend-icon="mdi-package-variant" class="dropdown-item" />
           <v-divider class="my-1" />
           <v-list-item @click="handleLogout" title="Đăng xuất" prepend-icon="mdi-logout" class="dropdown-item text-error" />
         </v-list>
       </v-menu>
 
-      <v-btn v-else to="/auth" variant="flat" color="primary" class="ml-2" rounded="xl">
+      <v-btn v-else to="/login" variant="flat" color="primary" class="ml-2" rounded="xl">
         Đăng nhập
       </v-btn>
 
