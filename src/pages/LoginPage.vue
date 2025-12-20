@@ -215,6 +215,7 @@ const handleLogin = async () => {
         email: userData.Email ?? userData.email,
         phone_number: userData.PhoneNumber ?? userData.phone_number,
         role_id: userData.RoleId ?? userData.role_id,
+        role_name: userData.RoleName ?? userData.role_name,
       };
 
       // Lưu user vào store

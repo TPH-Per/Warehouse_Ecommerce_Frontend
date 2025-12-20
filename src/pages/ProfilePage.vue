@@ -413,7 +413,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth.store';
+
+const router = useRouter();
+const authStore = useAuthStore();
 
 interface User {
   id: number;
@@ -466,27 +471,57 @@ const menuItems = [
   { title: 'Bảo mật', value: 'security', icon: 'mdi-shield-lock-outline' },
 ];
 
-// Mock User Data theo cấu trúc database
-const user = ref<User>({
-  id: 1,
-  name: 'animefan',
-  full_name: 'Nguyễn Văn Fan',
-  email: 'animefan@perw.com',
-  email_verified_at: '2024-01-15T10:30:00',
-  phone_number: '0912345678',
-  status: 'active',
-  role_id: 4,
-  role_name: 'Khách hàng',
-  created_at: '2024-01-01T08:00:00',
-  updated_at: '2024-12-15T14:30:00'
+// ========== USER DATA TỪ AUTH STORE ==========
+// Computed để lấy user từ store và map sang format phù hợp
+const user = computed<User>(() => {
+  const storeUser = authStore.user;
+  if (!storeUser) {
+    // Redirect về login nếu chưa đăng nhập
+    return {
+      id: 0,
+      name: '',
+      full_name: 'Chưa đăng nhập',
+      email: '',
+      email_verified_at: null,
+      phone_number: null,
+      status: 'inactive',
+      role_id: 0,
+      role_name: 'Guest',
+      created_at: '',
+      updated_at: ''
+    };
+  }
+  
+  return {
+    id: storeUser.id,
+    name: storeUser.name,
+    full_name: storeUser.full_name,
+    email: storeUser.email,
+    email_verified_at: null, // Không có trong response login
+    phone_number: storeUser.phone_number || null,
+    status: 'active', // Mặc định active vì đã login được
+    role_id: storeUser.role_id || 0,
+    role_name: (storeUser as any).role_name || 'Khách hàng',
+    created_at: '',
+    updated_at: ''
+  };
 });
 
+// Form để edit user
 const userForm = reactive({
-  name: user.value.name,
-  full_name: user.value.full_name,
-  email: user.value.email,
-  phone_number: user.value.phone_number || ''
+  name: '',
+  full_name: '',
+  email: '',
+  phone_number: ''
 });
+
+// Watch user để cập nhật form khi user thay đổi
+watch(user, (newUser) => {
+  userForm.name = newUser.name;
+  userForm.full_name = newUser.full_name;
+  userForm.email = newUser.email;
+  userForm.phone_number = newUser.phone_number || '';
+}, { immediate: true });
 
 const passwordForm = reactive({
   current: '',

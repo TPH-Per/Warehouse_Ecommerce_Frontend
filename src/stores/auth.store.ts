@@ -6,13 +6,15 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
-// Interface đơn giản cho user
+// Interface đơn giản cho user - khớp với API response
 export interface AuthUser {
     id: number;
     name: string;
     full_name: string;
     email: string;
+    phone_number?: string | null;
     role_id?: number;
+    role_name?: string;
 }
 
 export const useAuthStore = defineStore('auth', () => {

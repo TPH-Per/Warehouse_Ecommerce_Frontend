@@ -99,8 +99,9 @@
         <template v-slot:activator="{ props }">
           <v-btn v-bind="props" class="ml-2 user-btn" variant="outlined" rounded="xl">
             <v-avatar size="24" color="primary" class="mr-2">
-              <span class="text-caption text-black font-weight-bold">{{ currentUser.firstName.charAt(0) }}</span>
+              <span class="text-caption text-black font-weight-bold">{{ userInitials }}</span>
             </v-avatar>
+            <span class="hidden-sm-and-down mr-1">{{ displayName }}</span>
             <v-icon size="small">mdi-chevron-down</v-icon>
           </v-btn>
         </template>
@@ -145,16 +146,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth.store';
 
-// Mock Data
-const isAuthenticated = ref(true);
-const cartCount = ref(3);
-const wishlistCount = ref(1);
-const userUnreadCount = ref(5);
-const currentUser = ref({
-  firstName: 'Hoàng',
+const router = useRouter();
+const authStore = useAuthStore();
+
+// Computed từ auth store
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+const currentUser = computed(() => authStore.user);
+
+// Lấy chữ cái đầu để hiển thị avatar
+const userInitials = computed(() => {
+  if (!currentUser.value?.full_name) return 'U';
+  return currentUser.value.full_name
+    .split(' ')
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 });
+
+// Tên hiển thị
+const displayName = computed(() => {
+  return currentUser.value?.full_name || currentUser.value?.name || 'User';
+});
+
+// Mock data cho cart/wishlist (bạn sẽ config sau)
+const cartCount = ref(0);
+const wishlistCount = ref(0);
+const userUnreadCount = ref(0);
 
 const searchQuery = ref('');
 const showMobileMenu = ref(false);
@@ -167,17 +189,24 @@ const categoryQuickLinks = [
 ];
 
 const handleSearch = () => {
-  alert('Bạn đang tìm: ' + searchQuery.value);
+  if (searchQuery.value.trim()) {
+    router.push({ path: '/productlist', query: { search: searchQuery.value } });
+  }
 };
 
 const handleLogout = () => {
-  isAuthenticated.value = false;
-  alert('Đã đăng xuất!');
+  authStore.logout();
+  router.push('/login');
 };
 
 const toggleNotifications = () => {
   alert('Mở danh sách thông báo');
 };
+
+// Khởi tạo auth store khi component mount
+onMounted(() => {
+  authStore.initialize();
+});
 </script>
 
 <style scoped>

@@ -8,20 +8,12 @@ import type { AxiosError } from 'axios';
 
 // Tạo axios instance với cấu hình mặc định
 const apiClient = axios.create({
-  // URL API backend ASP.NET MVC5
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
-
-  // Timeout 30 giây
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 30000,
-
-  // Headers mặc định
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-
-  // QUAN TRỌNG cho ASP.NET: Cho phép gửi cookies/session
-  // Nếu backend dùng session-based auth, cần bật này
   withCredentials: true,
 });
 
@@ -32,17 +24,29 @@ const apiClient = axios.create({
 
 apiClient.interceptors.response.use(
   // Response thành công - trả về bình thường
-  (response) => response,
+  (response) => {
+    console.log('✅ API Response:', response.config.url, response.status);
+    return response;
+  },
 
   // Response lỗi - xử lý các mã lỗi
   (error: AxiosError) => {
+    // Log chi tiết để debug
+    console.error('❌ API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      code: error.code,
+    });
+
     const status = error.response?.status;
 
     // Lỗi 401 - Chưa đăng nhập
     if (status === 401) {
       console.error('❌ Chưa đăng nhập hoặc phiên hết hạn');
-      // Có thể redirect về login nếu cần
-      // window.location.href = '/login';
     }
 
     // Lỗi 403 - Không có quyền
@@ -60,9 +64,10 @@ apiClient.interceptors.response.use(
       console.error('❌ Lỗi server');
     }
 
-    // Lỗi network - không kết nối được
+    // Lỗi network - không kết nối được (thường là CORS hoặc SSL)
     if (!error.response) {
-      console.error('❌ Không thể kết nối đến server');
+      console.error('❌ Lỗi Network (có thể là CORS hoặc SSL certificate):', error.message);
+      console.error('💡 Thử mở URL trực tiếp trong browser để accept SSL certificate');
     }
 
     return Promise.reject(error);
