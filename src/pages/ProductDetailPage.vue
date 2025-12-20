@@ -1,15 +1,42 @@
 <template>
   <div class="product-detail-page">
-    <!-- Breadcrumbs -->
-    <v-container class="py-4">
-      <v-breadcrumbs :items="breadcrumbs" class="px-0">
-        <template v-slot:divider>
-          <v-icon size="small">mdi-chevron-right</v-icon>
-        </template>
-      </v-breadcrumbs>
+    <!-- Loading State -->
+    <v-container v-if="isLoading" class="py-16">
+      <v-row justify="center">
+        <v-col cols="12" class="text-center">
+          <v-progress-circular indeterminate color="primary" size="64" />
+          <p class="mt-4 text-h6">Đang tải sản phẩm...</p>
+        </v-col>
+      </v-row>
     </v-container>
 
-    <!-- Main Content -->
+    <!-- Error State -->
+    <v-container v-else-if="error" class="py-16">
+      <v-row justify="center">
+        <v-col cols="12" md="6" class="text-center">
+          <v-icon size="64" color="error" class="mb-4">mdi-alert-circle</v-icon>
+          <h2 class="text-h5 mb-4">Không thể tải sản phẩm</h2>
+          <p class="text-medium-emphasis mb-4">{{ error }}</p>
+          <v-btn color="primary" to="/productlist" rounded="lg">
+            <v-icon start>mdi-arrow-left</v-icon>
+            Quay lại danh sách
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
+
+    <!-- Product Content -->
+    <template v-else-if="product">
+      <!-- Breadcrumbs -->
+      <v-container class="py-4">
+        <v-breadcrumbs :items="breadcrumbs" class="px-0">
+          <template v-slot:divider>
+            <v-icon size="small">mdi-chevron-right</v-icon>
+          </template>
+        </v-breadcrumbs>
+      </v-container>
+
+      <!-- Main Content -->
     <v-container class="pb-12">
       <v-row>
         <!-- Left: Product Gallery -->
@@ -139,7 +166,7 @@
                   class="variant-card pa-3 rounded-lg cursor-pointer"
                   :class="{ 'variant-selected': selectedVariant?.id === variant.id }"
                   variant="outlined"
-                  @click="selectedVariant = variant"
+                  @click="selectedVariantId = variant.id"
                 >
                   <div class="d-flex align-center ga-3">
                     <v-avatar size="40" rounded="lg">
@@ -163,8 +190,23 @@
                   <v-icon size="small" class="mr-1">mdi-store</v-icon>
                   Chi nhánh giao hàng
                 </span>
+                <v-progress-circular v-if="isLoadingStock" indeterminate size="16" width="2" class="ml-2" />
               </div>
-              <v-card class="branch-selector rounded-xl pa-1" variant="outlined">
+              
+              <!-- Loading Stock -->
+              <v-card v-if="isLoadingStock" class="branch-selector rounded-xl pa-4 text-center" variant="outlined">
+                <v-progress-circular indeterminate size="24" class="mr-2" />
+                <span class="text-medium-emphasis">Đang tải thông tin tồn kho...</span>
+              </v-card>
+              
+              <!-- No Branches -->
+              <v-card v-else-if="availableBranches.length === 0" class="branch-selector rounded-xl pa-4 text-center" variant="outlined">
+                <v-icon color="warning" class="mr-2">mdi-alert</v-icon>
+                <span class="text-medium-emphasis">Không có chi nhánh nào có sẵn sản phẩm này</span>
+              </v-card>
+              
+              <!-- Branch List -->
+              <v-card v-else class="branch-selector rounded-xl pa-1" variant="outlined">
                 <v-radio-group v-model="selectedBranchId" hide-details class="ma-0">
                   <v-radio
                     v-for="branch in availableBranches"
@@ -179,7 +221,7 @@
                           <div class="text-body-2 font-weight-bold">{{ branch.name }}</div>
                           <div class="text-caption text-medium-emphasis">
                             <v-icon size="x-small" class="mr-1">mdi-map-marker</v-icon>
-                            {{ branch.location }}
+                            {{ branch.location || 'Chưa cập nhật địa chỉ' }}
                           </div>
                         </div>
                         <v-chip
@@ -348,117 +390,130 @@
         </v-col>
       </v-row>
     </v-container>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useProductsStore } from '@/stores/products.store';
+import { useBranchesStore } from '@/stores/branches.store';
+import type { ProductDetail } from '@/types';
 
-// Types
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
+// ========== ROUTER ==========
+const route = useRoute();
+const router = useRouter();
 
-interface Supplier {
-  id: number;
-  name: string;
-}
+// ========== STORES ==========
+const productsStore = useProductsStore();
+const branchesStore = useBranchesStore();
 
-interface ProductVariant {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  original_price?: number;
-  image_url: string;
-}
+// ========== LOADING & ERROR ==========
+const isLoading = computed(() => productsStore.isLoading);
+const error = computed(() => productsStore.error);
 
-interface Branch {
-  id: number;
-  name: string;
-  location: string;
-  stock: number;
-}
+// ========== PLACEHOLDER IMAGE ==========
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,' + btoa(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+    <rect fill="#1a1a2e" width="600" height="600"/>
+    <rect fill="#16213e" x="50" y="50" width="500" height="500" rx="20"/>
+    <path fill="#0f3460" d="M300 150 L450 350 L150 350 Z"/>
+    <circle fill="#e94560" cx="420" cy="180" r="40"/>
+    <text x="300" y="480" text-anchor="middle" fill="#666" font-family="Arial" font-size="24">No Image</text>
+  </svg>
+`);
 
-interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  status: 'active' | 'pre-order';
-  category: Category;
-  supplier: Supplier;
-  variants: ProductVariant[];
-  images: string[];
-  rating: number;
-  reviewCount: number;
-  soldCount: number;
-}
-
-// State
+// ========== LOCAL STATE ==========
 const selectedImageIndex = ref(0);
 const quantity = ref(1);
 const isInWishlist = ref(false);
 const selectedBranchId = ref<number>(1);
+const selectedVariantId = ref<number | null>(null);
 
-// Mock Data
-const product = ref<Product>({
-  id: 1,
-  name: 'Gojo Satoru: Shibuya Incident Ver. 1/7 Scale Figure',
-  slug: 'gojo-satoru-shibuya-incident',
-  description: `Mẫu figure Gojo Satoru được chế tác tỉ mỉ dựa trên phân cảnh Shibuya Incident trong bộ anime đình đám Jujutsu Kaisen.
-
-**Đặc điểm nổi bật:**
-• Chất liệu PVC cao cấp kết hợp ABS
-• Chiều cao 25cm (không tính đế)
-• 3 đôi tay có thể thay thế
-• 2 biểu cảm mặt khác nhau  
-• Đế LED có thể bật/tắt
-
-**Lưu ý quan trọng:**
-Sản phẩm chính hãng 100%, có tem chống hàng giả. Đóng gói kỹ lưỡng 3 lớp để đảm bảo an toàn khi vận chuyển.`,
-  status: 'active',
-  category: { id: 1, name: 'Figures', slug: 'figures' },
-  supplier: { id: 1, name: 'Good Smile Company' },
-  variants: [
-    { id: 1, name: 'Standard Edition', sku: 'GSC-GOJO-STD', price: 4250000, original_price: 5100000, image_url: 'https://picsum.photos/600/600?random=1' },
-    { id: 2, name: 'Deluxe Edition', sku: 'GSC-GOJO-DLX', price: 5800000, original_price: 6500000, image_url: 'https://picsum.photos/600/600?random=2' },
-    { id: 3, name: 'Limited Edition', sku: 'GSC-GOJO-LTD', price: 8500000, image_url: 'https://picsum.photos/600/600?random=3' },
-  ],
-  images: [
-    'https://picsum.photos/600/600?random=1',
-    'https://picsum.photos/600/600?random=4',
-    'https://picsum.photos/600/600?random=5',
-    'https://picsum.photos/600/600?random=6',
-  ],
-  rating: 4.8,
-  reviewCount: 142,
-  soldCount: 356,
+// ========== COMPUTED: PRODUCT DATA ==========
+// Lấy product từ store - hỗ trợ cả PascalCase và camelCase
+const product = computed(() => {
+  const p = productsStore.currentProduct;
+  if (!p) return null;
+  
+  return {
+    id: (p as any).Id ?? (p as any).id ?? 0,
+    name: (p as any).Name ?? (p as any).name ?? 'Sản phẩm',
+    slug: (p as any).Slug ?? (p as any).slug ?? '',
+    description: (p as any).Description ?? (p as any).description ?? '',
+    status: (p as any).Status ?? (p as any).status ?? 'active',
+    category: {
+      id: (p as any).Category?.Id ?? (p as any).category?.id ?? 0,
+      name: (p as any).Category?.Name ?? (p as any).CategoryName ?? (p as any).category?.name ?? 'Chưa phân loại',
+      slug: (p as any).Category?.Slug ?? (p as any).category?.slug ?? ''
+    },
+    supplier: {
+      id: (p as any).Supplier?.Id ?? (p as any).supplier?.id ?? 0,
+      name: (p as any).Supplier?.Name ?? (p as any).SupplierName ?? (p as any).supplier?.name ?? ''
+    },
+    variants: ((p as any).Variants ?? (p as any).variants ?? []).map((v: any) => ({
+      id: v.Id ?? v.id,
+      name: v.Name ?? v.name ?? 'Standard',
+      sku: v.Sku ?? v.sku ?? '',
+      price: v.Price ?? v.price ?? 0,
+      original_price: v.OriginalPrice ?? v.original_price ?? null,
+      image_url: v.ImageUrl ?? v.image_url ?? PLACEHOLDER_IMAGE
+    })),
+    images: (p as any).Images ?? (p as any).images ?? [],
+    rating: (p as any).Rating ?? (p as any).rating ?? 0,
+    reviewCount: (p as any).ReviewCount ?? (p as any).review_count ?? 0,
+    soldCount: (p as any).SoldCount ?? (p as any).sold_count ?? 0,
+  };
 });
 
-const selectedVariant = ref<ProductVariant>(product.value.variants[0]);
+// Selected variant
+const selectedVariant = computed(() => {
+  if (!product.value || product.value.variants.length === 0) return null;
+  
+  if (selectedVariantId.value) {
+    return product.value.variants.find((v: any) => v.id === selectedVariantId.value) || product.value.variants[0];
+  }
+  return product.value.variants[0];
+});
 
-const availableBranches = ref<Branch[]>([
-  { id: 1, name: 'Chi nhánh Hà Nội', location: '77 Nguyễn Trãi, Thanh Xuân', stock: 5 },
-  { id: 2, name: 'Chi nhánh Hồ Chí Minh', location: '123 Lê Lợi, Quận 1', stock: 12 },
-  { id: 3, name: 'Chi nhánh Đà Nẵng', location: '45 Bạch Đằng, Hải Châu', stock: 0 },
+// ========== BRANCHES & STOCK ==========
+// Lấy danh sách chi nhánh với tồn kho từ store
+const availableBranches = computed(() => {
+  return branchesStore.variantStocks.map(s => ({
+    id: s.BranchId,
+    name: s.BranchName,
+    location: s.Location || '',
+    stock: s.Stock
+  }));
+});
+
+// Kiểm tra có đang load stock không
+const isLoadingStock = computed(() => branchesStore.isLoading);
+
+// Breadcrumbs
+const breadcrumbs = computed(() => [
+  { title: 'Trang chủ', disabled: false, to: '/' },
+  { title: product.value?.category.name || 'Danh mục', disabled: false, to: '/productlist' },
+  { title: product.value?.name || 'Sản phẩm', disabled: true },
 ]);
 
-const breadcrumbs = [
-  { title: 'Trang chủ', disabled: false, to: '/' },
-  { title: product.value.category.name, disabled: false, to: '/productlist' },
-  { title: product.value.name, disabled: true },
-];
-
-// Computed
+// All images for gallery
 const allImages = computed(() => {
-  const variantImages = product.value.variants.map(v => v.image_url);
-  return [...new Set([...variantImages, ...product.value.images])].slice(0, 5);
+  if (!product.value) return [PLACEHOLDER_IMAGE];
+  
+  const variantImages = product.value.variants
+    .map((v: any) => v.image_url)
+    .filter((url: string) => url && url !== PLACEHOLDER_IMAGE);
+  
+  const productImages = product.value.images || [];
+  
+  const allImgs = [...new Set([...variantImages, ...productImages])].slice(0, 5);
+  
+  return allImgs.length > 0 ? allImgs : [PLACEHOLDER_IMAGE];
 });
 
-const currentImage = computed(() => allImages.value[selectedImageIndex.value]);
+const currentImage = computed(() => allImages.value[selectedImageIndex.value] || PLACEHOLDER_IMAGE);
 
 const currentPrice = computed(() => selectedVariant.value?.price || 0);
 
@@ -471,30 +526,107 @@ const selectedBranch = computed(() => availableBranches.value.find(b => b.id ===
 
 const maxStock = computed(() => selectedBranch.value?.stock || 0);
 
+// Tổng tồn kho tất cả chi nhánh
+const totalStockAllBranches = computed(() => branchesStore.totalStock);
+
 const formattedDescription = computed(() => {
+  if (!product.value?.description) return '';
   return product.value.description
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>');
 });
 
-// Watchers
-watch(selectedVariant, (newVariant) => {
-  const idx = allImages.value.indexOf(newVariant.image_url);
-  if (idx >= 0) selectedImageIndex.value = idx;
+// ========== WATCHERS ==========
+
+// Watch variant change to update image và fetch stock
+watch(() => selectedVariant.value, async (newVariant) => {
+  if (newVariant?.image_url) {
+    const idx = allImages.value.indexOf(newVariant.image_url);
+    if (idx >= 0) selectedImageIndex.value = idx;
+  }
+  
+  // Fetch stock cho variant mới
+  if (newVariant?.id) {
+    await branchesStore.fetchStockByVariant(newVariant.id);
+    
+    // Tự động chọn chi nhánh đầu tiên có hàng
+    const branches = availableBranches.value;
+    const firstAvailable = branches.find(b => b.stock > 0);
+    if (firstAvailable) {
+      selectedBranchId.value = firstAvailable.id;
+    } else if (branches.length > 0 && branches[0]) {
+      selectedBranchId.value = branches[0].id;
+    }
+  }
 });
 
-// Methods
+// Watch route change to fetch new product
+watch(
+  () => route.query.id,
+  (newId) => {
+    if (newId) {
+      const productId = Number(newId);
+      if (!isNaN(productId)) {
+        productsStore.fetchProductById(productId);
+        branchesStore.clearStocks(); // Clear old stock data
+        selectedVariantId.value = null; // Reset variant selection
+        selectedBranchId.value = 0; // Reset branch selection
+        quantity.value = 1;
+      }
+    }
+  },
+  { immediate: true }
+);
+
+// Watch product để set default variant và fetch stock
+watch(() => product.value, async (newProduct) => {
+  if (newProduct && newProduct.variants.length > 0) {
+    // Auto-select first variant nếu chưa chọn
+    if (!selectedVariantId.value) {
+      const firstVariant = newProduct.variants[0];
+      if (firstVariant) {
+        selectedVariantId.value = firstVariant.id;
+        // Fetch stock cho variant đầu tiên
+        await branchesStore.fetchStockByVariant(firstVariant.id);
+        
+        // Tự động chọn chi nhánh đầu tiên có hàng
+        const branches = availableBranches.value;
+        const firstAvailable = branches.find(b => b.stock > 0);
+        if (firstAvailable) {
+          selectedBranchId.value = firstAvailable.id;
+        }
+      }
+    }
+  }
+}, { immediate: true });
+
+// ========== METHODS ==========
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 };
 
+const selectVariant = (variantId: number) => {
+  selectedVariantId.value = variantId;
+};
+
 const addToCart = () => {
-  alert(`Đã thêm ${quantity.value}x "${selectedVariant.value.name}" từ ${selectedBranch.value?.name} vào giỏ hàng!`);
+  if (!selectedVariant.value || !selectedBranch.value) return;
+  alert(`Đã thêm ${quantity.value}x "${selectedVariant.value.name}" từ ${selectedBranch.value.name} vào giỏ hàng!`);
+  // TODO: Implement cart store
 };
 
 const toggleWishlist = () => {
   isInWishlist.value = !isInWishlist.value;
+  // TODO: Implement wishlist store
 };
+
+// ========== LIFECYCLE ==========
+onMounted(() => {
+  const productId = route.query.id;
+  if (productId) {
+    productsStore.fetchProductById(Number(productId));
+  }
+});
 </script>
 
 <style scoped>

@@ -124,7 +124,7 @@
 
       <!-- Grid View -->
       <v-row v-else-if="viewMode === 'grid'">
-        <v-col v-for="product in products" :key="product.id" cols="6" sm="4" lg="3">
+        <v-col v-for="product in products" :key="product.Id" cols="6" sm="4" lg="3">
           <v-card class="product-card rounded-xl" variant="outlined">
             <div class="image-container position-relative overflow-hidden">
               <v-img :src="getProductImage(product)" class="product-img" cover height="180">
@@ -143,19 +143,16 @@
                   Thêm giỏ
                 </v-btn>
               </div>
-              <div class="badges position-absolute top-0 left-0 pa-2 d-flex flex-column ga-1">
-                <v-chip v-if="product.status === 'pre-order'" size="x-small" color="info">Pre-order</v-chip>
-              </div>
             </div>
             <v-card-text class="pa-3">
-              <div class="text-caption text-primary">{{ product.category.name }}</div>
-              <div class="text-body-2 font-weight-bold text-truncate product-title">{{ product.name }}</div>
-              <div class="text-caption text-medium-emphasis text-truncate">{{ product.supplier.name }}</div>
+              <div class="text-caption text-primary">{{ product.CategoryName || 'Chưa phân loại' }}</div>
+              <div class="text-body-2 font-weight-bold text-truncate product-title">{{ product.Name }}</div>
+              <div class="text-caption text-medium-emphasis text-truncate">{{ product.Description || '' }}</div>
               <div class="d-flex justify-space-between align-center mt-2">
                 <span class="text-subtitle-2 font-weight-bold neon-text-secondary">
                   {{ formatPrice(getLowestPrice(product)) }}
                 </span>
-                <v-btn :to="`/product?id=${product.id}`" variant="text" color="primary" size="x-small" icon="mdi-eye" />
+                <v-btn :to="`/product?id=${product.Id}`" variant="text" color="primary" size="x-small" icon="mdi-eye" />
               </div>
             </v-card-text>
           </v-card>
@@ -164,7 +161,7 @@
 
       <!-- List View -->
       <v-row v-else>
-        <v-col v-for="product in products" :key="product.id" cols="12">
+        <v-col v-for="product in products" :key="product.Id" cols="12">
           <v-card class="product-card-list rounded-xl overflow-hidden d-flex" variant="outlined">
             <v-img
               :src="getProductImage(product)"
@@ -176,13 +173,11 @@
             <v-card-text class="pa-4 d-flex flex-column flex-grow-1">
               <div class="d-flex justify-space-between align-start mb-2">
                 <div>
-                  <v-chip size="x-small" color="primary" variant="tonal" class="mb-1">{{ product.category.name }}</v-chip>
-                  <h3 class="text-subtitle-1 font-weight-bold">{{ product.name }}</h3>
-                  <div class="text-caption text-medium-emphasis">NCC: {{ product.supplier.name }}</div>
+                  <v-chip size="x-small" color="primary" variant="tonal" class="mb-1">{{ product.CategoryName || 'Chưa phân loại' }}</v-chip>
+                  <h3 class="text-subtitle-1 font-weight-bold">{{ product.Name }}</h3>
                 </div>
-                <v-chip v-if="product.status === 'pre-order'" size="x-small" color="info">Pre-order</v-chip>
               </div>
-              <p class="text-caption text-medium-emphasis line-clamp-2 mb-auto">{{ product.description }}</p>
+              <p class="text-caption text-medium-emphasis line-clamp-2 mb-auto">{{ product.Description || '' }}</p>
               <div class="d-flex align-center justify-space-between mt-2">
                 <div class="text-h6 font-weight-bold neon-text-secondary">
                   {{ formatPrice(getLowestPrice(product)) }}
@@ -192,7 +187,7 @@
                     <v-icon start size="small">mdi-heart-outline</v-icon>
                     Lưu
                   </v-btn>
-                  <v-btn :to="`/product?id=${product.id}`" color="primary" size="small" rounded="lg">
+                  <v-btn :to="`/product?id=${product.Id}`" color="primary" size="small" rounded="lg">
                     Chi tiết
                   </v-btn>
                 </div>
@@ -217,48 +212,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useProductsStore } from '@/stores/products.store';
+import { useCategoriesStore } from '@/stores/categories.store';
+import { useSuppliersStore } from '@/stores/suppliers.store';
+import type { Product } from '@/types';
 
-// Types matching database structure
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
+// ========== PINIA STORES ==========
+const productsStore = useProductsStore();
+const categoriesStore = useCategoriesStore();
+const suppliersStore = useSuppliersStore();
 
-interface Supplier {
-  id: number;
-  name: string;
-}
-
-interface ProductVariant {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  original_price?: number;
-  image_url?: string;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  status: 'active' | 'pre-order' | 'inactive';
-  category: Category;
-  supplier: Supplier;
-  variants: ProductVariant[];
-}
-
-// State
-const loading = ref(false);
+// ========== LOCAL STATE ==========
 const viewMode = ref<'grid' | 'list'>('grid');
 const searchQuery = ref('');
 const sortBy = ref('newest');
 const currentPage = ref(1);
-const totalProducts = ref(0);
-const totalPages = ref(1);
 
 const filters = ref({
   category_id: null as number | null,
@@ -266,24 +235,23 @@ const filters = ref({
   status: null as string | null,
 });
 
-// Mock data matching database
-const categories = ref<Category[]>([
-  { id: 1, name: 'Figures', slug: 'figures' },
-  { id: 2, name: 'Nendoroids', slug: 'nendoroids' },
-  { id: 3, name: 'Plushies', slug: 'plushies' },
-  { id: 4, name: 'Figma', slug: 'figma' },
-]);
+// ========== COMPUTED ==========
+// Lấy products từ store
+const products = computed(() => productsStore.products);
+const loading = computed(() => productsStore.isLoading);
+const totalProducts = computed(() => productsStore.total);
+const totalPages = computed(() => Math.ceil(productsStore.total / 12) || 1);
 
-const suppliers = ref<Supplier[]>([
-  { id: 1, name: 'Good Smile Company' },
-  { id: 2, name: 'Aniplex' },
-  { id: 3, name: 'Kotobukiya' },
-  { id: 4, name: 'Bandai Namco' },
-]);
+// Lấy options từ stores - Dynamic data từ API
+const categories = computed(() => categoriesStore.categoryOptions);
+const suppliers = computed(() => suppliersStore.supplierOptions);
 
+// ========== STATIC OPTIONS ==========
 const statusOptions = [
+  { title: 'Tất cả', value: null },
   { title: 'Đang bán', value: 'active' },
   { title: 'Pre-order', value: 'pre-order' },
+  { title: 'Không hoạt động', value: 'inactive' },
 ];
 
 const sortOptions = [
@@ -293,58 +261,56 @@ const sortOptions = [
   { title: 'Giá cao đến thấp', value: 'price_desc' },
 ];
 
-const products = ref<Product[]>([]);
+// ========== PLACEHOLDER IMAGE ==========
+// SVG placeholder cho sản phẩm không có ảnh
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,' + btoa(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+    <rect fill="#1a1a2e" width="400" height="400"/>
+    <rect fill="#16213e" x="50" y="50" width="300" height="300" rx="20"/>
+    <path fill="#0f3460" d="M200 120 L280 220 L120 220 Z"/>
+    <circle fill="#e94560" cx="260" cy="140" r="25"/>
+    <text x="200" y="320" text-anchor="middle" fill="#666" font-family="Arial" font-size="16">No Image</text>
+  </svg>
+`);
 
-// Methods
+// ========== METHODS ==========
 const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  return new Intl.NumberFormat('vi-VN', { 
+    style: 'currency', 
+    currency: 'VND' 
+  }).format(price);
 };
 
+// Lấy hình ảnh sản phẩm - với placeholder nếu không có ảnh
 const getProductImage = (product: Product) => {
-  return product.variants[0]?.image_url || 'https://picsum.photos/400/400?random=' + product.id;
+  const imageUrl = (product as any).ImageUrl || (product as any).imageUrl || product.ImageUrl;
+  
+  // Kiểm tra có ảnh hay không
+  if (!imageUrl || imageUrl === '' || imageUrl === null || imageUrl === 'null') {
+    return PLACEHOLDER_IMAGE;
+  }
+  
+  return imageUrl;
 };
 
+// Lấy giá thấp nhất
 const getLowestPrice = (product: Product) => {
-  if (!product.variants.length) return 0;
-  return Math.min(...product.variants.map(v => v.price));
+  const price = (product as any).Price || (product as any).price;
+  return price || 0;
 };
 
+// Fetch products từ store
 const fetchProducts = async () => {
-  loading.value = true;
-  // Simulate API call
-  setTimeout(() => {
-    products.value = Array(8).fill(null).map((_, i): Product => ({
-      id: i + 1,
-      name: `Figure Anime Character #${i + 1}`,
-      slug: `figure-anime-character-${i + 1}`,
-      description: 'Mô tả chi tiết về figure cao cấp chính hãng từ Nhật Bản, bảo hành 12 tháng, đóng gói cẩn thận.',
-      status: i % 3 === 0 ? 'pre-order' : 'active',
-      category: "ahihi",
-      supplier: suppliers.value[i % 4],
-      variants: [
-        {
-          id: i * 10 + 1,
-          name: 'Standard',
-          sku: `SKU-${i + 1}-STD`,
-          price: 1250000 + (i * 250000),
-          original_price: i % 2 === 0 ? 1500000 + (i * 250000) : undefined,
-          image_url: `https://picsum.photos/400/400?random=${i + 1}`,
-        },
-        {
-          id: i * 10 + 2,
-          name: 'Deluxe',
-          sku: `SKU-${i + 1}-DLX`,
-          price: 2250000 + (i * 250000),
-          image_url: `https://picsum.photos/400/400?random=${i + 10}`,
-        },
-      ],
-    }));
-    totalProducts.value = 32;
-    totalPages.value = 4;
-    loading.value = false;
-  }, 600);
+  if (searchQuery.value.trim()) {
+    await productsStore.searchProducts(searchQuery.value);
+  } else if (filters.value.category_id) {
+    await productsStore.fetchByCategory(filters.value.category_id);
+  } else {
+    await productsStore.fetchProducts();
+  }
 };
 
+// Clear filters
 const clearFilters = () => {
   searchQuery.value = '';
   filters.value = { category_id: null, supplier_id: null, status: null };
@@ -352,8 +318,26 @@ const clearFilters = () => {
   fetchProducts();
 };
 
-onMounted(() => {
-  fetchProducts();
+// Watch for filter changes
+watch(
+  () => filters.value.category_id,
+  (newVal) => {
+    if (newVal) {
+      productsStore.fetchByCategory(newVal);
+    } else {
+      productsStore.fetchProducts();
+    }
+  }
+);
+
+// ========== LIFECYCLE ==========
+onMounted(async () => {
+  // Fetch tất cả data cần thiết khi component mount
+  await Promise.all([
+    productsStore.fetchProducts(),
+    categoriesStore.fetchCategories(),
+    suppliersStore.fetchSuppliers(),
+  ]);
 });
 </script>
 

@@ -73,26 +73,38 @@ export interface Supplier {
 
 export type ProductStatus = 'draft' | 'active' | 'inactive';
 
-export interface Product {
-    id: number;
-    category_id: number;
-    supplier_id: number;
-    name: string;
-    description: string | null;
-    slug: string;
-    status: ProductStatus;
-    created_at?: string;
-    updated_at?: string;
-    // Populated fields
-    category?: Category;
-    supplier?: Supplier;
-    variants?: ProductVariant[];
-    // Computed fields (từ backend)
-    images?: string[];
-    rating?: number;
-    review_count?: number;
-    min_price?: number;
-    max_price?: number;
+// export interface Product {
+//     id: number;
+//     category_id: number;
+//     supplier_id: number;
+//     name: string;
+//     description: string | null;
+//     slug: string;
+//     status: ProductStatus;
+//     created_at?: string;
+//     updated_at?: string;
+//     // Populated fields
+//     category?: Category;
+//     supplier?: Supplier;
+//     variants?: ProductVariant[];
+//     // Computed fields (từ backend)
+//     images?: string[];
+//     rating?: number;
+//     review_count?: number;
+//     min_price?: number;
+//     max_price?: number;
+// }
+
+export interface Product{
+  Id: number;
+  Name: string;
+  Slug: string;
+  Description?: string;
+  CategoryId?: number;
+  CategoryName?: string;
+  Price: number;
+  OriginalPrice?: number;
+  ImageUrl?: string;
 }
 
 export interface ProductVariant {
@@ -110,6 +122,22 @@ export interface ProductVariant {
     // Populated
     product?: Product;
 }
+
+export interface ProductDetail extends Product {
+  Category: {
+    Id: number;
+    Name: string;
+  };
+  Variants: Array<{
+    Id: number;
+    Name: string;
+    Sku: string;
+    Price: number;
+    OriginalPrice?: number;
+    ImageUrl?: string;
+  }>;
+}
+
 
 // ========== ADDRESS ==========
 
