@@ -1,0 +1,121 @@
+# HƯỚNG DẪN FETCH DATA TỪ SERVER
+# ================================
+
+## 1. VIẾT API CONTROLLER (C#)
+
+### Template cơ bản:
+
+```csharp
+[RoutePrefix("api/products")]
+public class ApiProductsController : ApiController
+{
+    private readonly PerwDbContext _db = new PerwDbContext();
+
+    // GET /api/products
+    [HttpGet]
+    [Route("")]
+    public IHttpActionResult GetAll()
+    {
+        try
+        {
+            var products = _db.products
+                .Include(p => p.category)
+                .Where(p => p.deleted_at == null)
+                .Select(p => new {
+                    Id = p.id,
+                    Name = p.name,
+                    Price = p.product_variants.FirstOrDefault().price,
+                    ImageUrl = p.product_variants.FirstOrDefault().image_url
+                })
+                .Take(20)
+                .ToList();
+
+            return Ok(new {
+                Success = true,
+                Data = products
+            });
+        }
+        catch (Exception ex)
+        {
+            return InternalServerError(ex);
+        }
+    }
+
+    // GET /api/products/{id}
+    [HttpGet]
+    [Route("{id:long}")]
+    public IHttpActionResult GetById(long id)
+    {
+        var product = _db.products.Find(id);
+        if (product == null) return NotFound();
+        
+        return Ok(new { Success = true, Data = product });
+    }
+}
+```
+
+## 2. GỌI API TỪ VUE
+
+### Cách 1: Gọi trực tiếp
+
+```typescript
+import { ref, onMounted } from 'vue';
+import apiClient from '@/api';
+
+const products = ref([]);
+const isLoading = ref(false);
+
+onMounted(async () => {
+  isLoading.value = true;
+  try {
+    const response = await apiClient.get('/products');
+    const data = response.data;
+    if (data.Success ?? data.success) {
+      products.value = data.Data ?? data.data;
+    }
+  } catch (error) {
+    console.error(error);
+  } finally {
+    isLoading.value = false;
+  }
+});
+```
+
+### Cách 2: Dùng Pinia Store
+
+```typescript
+// stores/products.store.ts
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import apiClient from '@/api';
+
+export const useProductsStore = defineStore('products', () => {
+  const products = ref([]);
+  const isLoading = ref(false);
+
+  const fetchProducts = async () => {
+    isLoading.value = true;
+    try {
+      const { data } = await apiClient.get('/products');
+      if (data.Success ?? data.success) {
+        products.value = data.Data ?? data.data;
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  return { products, isLoading, fetchProducts };
+});
+```
+
+## 3. LƯU Ý QUAN TRỌNG
+
+- C# trả về PascalCase: { Success, Data, Message }
+- JavaScript expect camelCase
+- Dùng: data.Success ?? data.success để hỗ trợ cả hai
+
+- Include related data:
+  _db.products.Include(p => p.category)
+
+- Debug: F12 -> Network tab

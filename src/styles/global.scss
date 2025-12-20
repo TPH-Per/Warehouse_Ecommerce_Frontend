@@ -1,0 +1,279 @@
+/**
+ * Global Neon Styles
+ * Defines reusable neon effects, glassmorphism, and animations
+ */
+
+// ===== NEON GLOW EFFECTS =====
+.neon-glow-primary {
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3),
+              0 0 20px rgba(0, 212, 255, 0.2),
+              0 0 40px rgba(0, 212, 255, 0.1);
+}
+
+.neon-glow-secondary {
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.3),
+              0 0 20px rgba(255, 0, 255, 0.2),
+              0 0 40px rgba(255, 0, 255, 0.1);
+}
+
+.neon-glow-success {
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3),
+              0 0 20px rgba(0, 255, 136, 0.2),
+              0 0 40px rgba(0, 255, 136, 0.1);
+}
+
+.neon-text-primary {
+  color: #00d4ff;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5),
+               0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.neon-text-secondary {
+  color: #ff00ff;
+  text-shadow: 0 0 10px rgba(255, 0, 255, 0.5),
+               0 0 20px rgba(255, 0, 255, 0.3);
+}
+
+// ===== GLASSMORPHISM =====
+.glass-card {
+  background: rgba(18, 18, 26, 0.8) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+.glass-surface {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+// ===== NEON BORDERS =====
+.neon-border-primary {
+  border: 1px solid rgba(0, 212, 255, 0.5) !important;
+  box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.1);
+}
+
+.neon-border-secondary {
+  border: 1px solid rgba(255, 0, 255, 0.5) !important;
+  box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.1);
+}
+
+// ===== GRADIENT BACKGROUNDS =====
+.bg-neon-gradient {
+  background: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #ff00ff 100%);
+}
+
+.bg-neon-gradient-dark {
+  background: linear-gradient(135deg, 
+    rgba(0, 212, 255, 0.15) 0%, 
+    rgba(168, 85, 247, 0.15) 50%, 
+    rgba(255, 0, 255, 0.15) 100%);
+}
+
+.bg-hero-gradient {
+  background: 
+    radial-gradient(ellipse at top left, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(255, 0, 255, 0.15) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0a0f 0%, #12121a 100%);
+}
+
+// ===== GRADIENT TEXT =====
+.gradient-text {
+  background: linear-gradient(90deg, #00d4ff 0%, #ff00ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-alt {
+  background: linear-gradient(90deg, #ff00ff 0%, #00d4ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+// ===== ANIMATIONS =====
+@keyframes neonPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3),
+                0 0 20px rgba(0, 212, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.5),
+                0 0 40px rgba(0, 212, 255, 0.3),
+                0 0 60px rgba(0, 212, 255, 0.2);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-neon-pulse {
+  animation: neonPulse 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, 
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+// ===== HOVER EFFECTS =====
+.hover-neon-glow {
+  transition: all 0.3s ease;
+  &:hover {
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4),
+                0 0 30px rgba(0, 212, 255, 0.2);
+    transform: translateY(-2px);
+  }
+}
+
+.hover-scale {
+  transition: transform 0.3s ease;
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.hover-lift {
+  transition: all 0.3s ease;
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+}
+
+// ===== UTILITY CLASSES =====
+.text-glow {
+  text-shadow: 0 0 10px currentColor;
+}
+
+.border-glow {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #00d4ff, #ff00ff);
+    z-index: -1;
+    opacity: 0.5;
+    filter: blur(8px);
+  }
+}
+
+// ===== SCROLLBAR STYLING =====
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #12121a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00d4ff, #ff00ff);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00b8db, #cc00cc);
+}
+
+// ===== CARD VARIANTS =====
+.neon-card {
+  background: rgba(18, 18, 26, 0.9) !important;
+  border: 1px solid rgba(0, 212, 255, 0.2) !important;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: rgba(0, 212, 255, 0.5) !important;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+  }
+}
+
+.neon-card-secondary {
+  background: rgba(18, 18, 26, 0.9) !important;
+  border: 1px solid rgba(255, 0, 255, 0.2) !important;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: rgba(255, 0, 255, 0.5) !important;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.15);
+  }
+}
+
+// ===== LAYOUT HELPERS =====
+.sticky-top {
+  position: sticky;
+  top: 80px;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ===== FIX VUETIFY OVERRIDES =====
+.v-application {
+  font-family: 'Roboto', sans-serif;
+}
+
+.v-btn {
+  letter-spacing: 0 !important;
+}
+
+// ===== GRID PATTERN BACKGROUND =====
+.grid-pattern {
+  background-image: 
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+// ===== HERO SECTION STYLES =====
+.hero-section {
+  position: relative;
+  min-height: 600px;
+  overflow: hidden;
+}
+
+.hero-particles {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 2px 2px, rgba(0, 212, 255, 0.15) 1px, transparent 0);
+  background-size: 40px 40px;
+  opacity: 0.5;
+}

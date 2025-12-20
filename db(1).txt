@@ -1,0 +1,778 @@
+USE [perw]
+GO
+/****** Object:  Table [dbo].[addresses]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[addresses](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[user_id] [bigint] NOT NULL,
+	[recipient_name] [nvarchar](100) NOT NULL,
+	[recipient_phone] [nvarchar](20) NOT NULL,
+	[street_address] [nvarchar](255) NOT NULL,
+	[ward] [nvarchar](100) NOT NULL,
+	[district] [nvarchar](100) NOT NULL,
+	[city] [nvarchar](100) NOT NULL,
+	[is_default] [bit] NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_addresses] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[branch_inventories]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[branch_inventories](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[branch_id] [bigint] NOT NULL,
+	[product_variant_id] [bigint] NOT NULL,
+	[quantity_on_hand] [int] NOT NULL,
+	[quantity_reserved] [int] NOT NULL,
+	[reorder_level] [int] NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_branch_inventories] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_branch_inventories_branch_variant] UNIQUE NONCLUSTERED 
+(
+	[branch_id] ASC,
+	[product_variant_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[branches]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[branches](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](200) NOT NULL,
+	[warehouse_id] [bigint] NULL,
+	[location] [nvarchar](255) NULL,
+	[manager_user_id] [bigint] NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_branches] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[carts]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[carts](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[user_id] [bigint] NOT NULL,
+	[product_variant_id] [bigint] NOT NULL,
+	[quantity] [int] NOT NULL,
+	[price] [decimal](18, 2) NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_carts] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_carts_user_variant_deleted] UNIQUE NONCLUSTERED 
+(
+	[user_id] ASC,
+	[product_variant_id] ASC,
+	[deleted_at] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[categories]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[categories](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](100) NOT NULL,
+	[slug] [nvarchar](100) NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_categories] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_categories_slug] UNIQUE NONCLUSTERED 
+(
+	[slug] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[discounts]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[discounts](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[code] [nvarchar](50) NOT NULL,
+	[type] [nvarchar](20) NOT NULL,
+	[value] [decimal](10, 2) NOT NULL,
+	[min_order_amount] [decimal](12, 2) NULL,
+	[max_uses] [int] NULL,
+	[used_count] [int] NOT NULL,
+	[start_at] [datetime2](7) NULL,
+	[end_at] [datetime2](7) NULL,
+	[is_active] [bit] NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_discounts] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_discounts_code] UNIQUE NONCLUSTERED 
+(
+	[code] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[inbound_receipt_details]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[inbound_receipt_details](
+	[receipt_id] [bigint] NOT NULL,
+	[product_variant_id] [bigint] NOT NULL,
+	[quantity] [int] NOT NULL,
+	[input_price] [decimal](12, 2) NOT NULL,
+	[created_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_inbound_receipt_details] PRIMARY KEY CLUSTERED 
+(
+	[receipt_id] ASC,
+	[product_variant_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[inbound_receipts]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[inbound_receipts](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[code] [nvarchar](50) NOT NULL,
+	[supplier_id] [bigint] NOT NULL,
+	[warehouse_id] [bigint] NOT NULL,
+	[received_at] [datetime2](7) NOT NULL,
+	[status] [nvarchar](50) NOT NULL,
+	[notes] [nvarchar](max) NULL,
+	[created_by] [bigint] NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+	[total_amount] [decimal](18, 2) NULL,
+ CONSTRAINT [PK_inbound_receipts] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_inbound_receipts_code] UNIQUE NONCLUSTERED 
+(
+	[code] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[inventories]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[inventories](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[product_variant_id] [bigint] NOT NULL,
+	[warehouse_id] [bigint] NOT NULL,
+	[quantity_on_hand] [int] NOT NULL,
+	[quantity_reserved] [int] NOT NULL,
+	[reorder_level] [int] NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_inventories] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_inventories_variant_warehouse] UNIQUE NONCLUSTERED 
+(
+	[product_variant_id] ASC,
+	[warehouse_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[inventory_transactions]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[inventory_transactions](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[product_variant_id] [bigint] NOT NULL,
+	[warehouse_id] [bigint] NOT NULL,
+	[order_id] [bigint] NULL,
+	[quantity] [int] NOT NULL,
+	[type] [nvarchar](20) NOT NULL,
+	[notes] [nvarchar](max) NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_inventory_transactions] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[payment_methods]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[payment_methods](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](100) NOT NULL,
+	[code] [nvarchar](50) NOT NULL,
+	[is_active] [bit] NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_payment_methods] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_payment_methods_name_code] UNIQUE NONCLUSTERED 
+(
+	[name] ASC,
+	[code] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[payments]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[payments](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[order_id] [bigint] NOT NULL,
+	[payment_method_id] [bigint] NOT NULL,
+	[amount] [decimal](12, 2) NOT NULL,
+	[status] [nvarchar](20) NOT NULL,
+	[transaction_code] [nvarchar](100) NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_payments] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[product_reviews]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[product_reviews](
+	[user_id] [bigint] NOT NULL,
+	[product_id] [bigint] NOT NULL,
+	[rating] [tinyint] NOT NULL,
+	[comment] [nvarchar](max) NULL,
+	[is_approved] [bit] NOT NULL,
+	[status] [nvarchar](255) NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[product_variants]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[product_variants](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[product_id] [bigint] NOT NULL,
+	[name] [nvarchar](100) NOT NULL,
+	[sku] [nvarchar](100) NOT NULL,
+	[price] [decimal](10, 2) NOT NULL,
+	[original_price] [decimal](10, 2) NULL,
+	[image_url] [nvarchar](500) NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_product_variants] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_product_variants_sku] UNIQUE NONCLUSTERED 
+(
+	[sku] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[products]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[products](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[category_id] [bigint] NOT NULL,
+	[supplier_id] [bigint] NOT NULL,
+	[name] [nvarchar](255) NOT NULL,
+	[description] [nvarchar](max) NULL,
+	[slug] [nvarchar](255) NOT NULL,
+	[status] [nvarchar](20) NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_products_slug] UNIQUE NONCLUSTERED 
+(
+	[slug] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[purchase_order_details]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[purchase_order_details](
+	[order_id] [bigint] NOT NULL,
+	[product_variant_id] [bigint] NOT NULL,
+	[quantity] [int] NOT NULL,
+	[price_at_purchase] [decimal](10, 2) NOT NULL,
+	[subtotal] [decimal](10, 2) NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_purchase_order_details] PRIMARY KEY CLUSTERED 
+(
+	[order_id] ASC,
+	[product_variant_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[purchase_orders]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[purchase_orders](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[user_id] [bigint] NULL,
+	[order_code] [nvarchar](50) NOT NULL,
+	[status] [nvarchar](20) NOT NULL,
+	[shipping_recipient_name] [nvarchar](100) NULL,
+	[shipping_recipient_phone] [nvarchar](20) NULL,
+	[shipping_address] [nvarchar](max) NULL,
+	[sub_total] [decimal](12, 2) NOT NULL,
+	[shipping_fee] [decimal](12, 2) NOT NULL,
+	[discount_amount] [decimal](12, 2) NOT NULL,
+	[total_amount] [decimal](12, 2) NOT NULL,
+	[discount_id] [bigint] NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+	[branch_id] [bigint] NULL,
+ CONSTRAINT [PK_purchase_orders] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_purchase_orders_order_code] UNIQUE NONCLUSTERED 
+(
+	[order_code] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[roles]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[roles](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](50) NOT NULL,
+	[description] [nvarchar](max) NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_roles] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[suppliers]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[suppliers](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](100) NOT NULL,
+	[contact_info] [nvarchar](max) NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_suppliers] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[users]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[users](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](255) NOT NULL,
+	[full_name] [nvarchar](255) NOT NULL,
+	[email] [nvarchar](255) NOT NULL,
+	[email_verified_at] [datetime2](7) NULL,
+	[password] [nvarchar](255) NOT NULL,
+	[remember_token] [nvarchar](100) NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[role_id] [bigint] NOT NULL,
+	[phone_number] [nvarchar](255) NULL,
+	[status] [nvarchar](255) NOT NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ_users_email] UNIQUE NONCLUSTERED 
+(
+	[email] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[warehouse_transfer_details]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[warehouse_transfer_details](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[transfer_id] [bigint] NOT NULL,
+	[product_variant_id] [bigint] NOT NULL,
+	[quantity] [int] NOT NULL,
+	[price] [decimal](10, 2) NULL,
+	[notes] [nvarchar](max) NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_warehouse_transfer_details] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[warehouse_transfers]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[warehouse_transfers](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[from_warehouse_id] [bigint] NOT NULL,
+	[to_branch_id] [bigint] NOT NULL,
+	[transfer_date] [datetime2](7) NULL,
+	[status] [nvarchar](50) NOT NULL,
+	[notes] [nvarchar](max) NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_warehouse_transfers] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[warehouses]    Script Date: 12/20/2025 4:08:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[warehouses](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](100) NOT NULL,
+	[location] [nvarchar](255) NOT NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[deleted_at] [datetime2](7) NULL,
+ CONSTRAINT [PK_warehouses] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[addresses] ADD  DEFAULT ((0)) FOR [is_default]
+GO
+ALTER TABLE [dbo].[branch_inventories] ADD  DEFAULT ((0)) FOR [quantity_on_hand]
+GO
+ALTER TABLE [dbo].[branch_inventories] ADD  DEFAULT ((0)) FOR [quantity_reserved]
+GO
+ALTER TABLE [dbo].[branch_inventories] ADD  DEFAULT ((5)) FOR [reorder_level]
+GO
+ALTER TABLE [dbo].[carts] ADD  DEFAULT ((1)) FOR [quantity]
+GO
+ALTER TABLE [dbo].[carts] ADD  DEFAULT ((0)) FOR [price]
+GO
+ALTER TABLE [dbo].[discounts] ADD  DEFAULT ((0)) FOR [used_count]
+GO
+ALTER TABLE [dbo].[discounts] ADD  DEFAULT ((1)) FOR [is_active]
+GO
+ALTER TABLE [dbo].[inbound_receipt_details] ADD  DEFAULT ((1)) FOR [quantity]
+GO
+ALTER TABLE [dbo].[inbound_receipt_details] ADD  DEFAULT ((0)) FOR [input_price]
+GO
+ALTER TABLE [dbo].[inbound_receipt_details] ADD  DEFAULT (getdate()) FOR [created_at]
+GO
+ALTER TABLE [dbo].[inbound_receipts] ADD  DEFAULT (getdate()) FOR [received_at]
+GO
+ALTER TABLE [dbo].[inbound_receipts] ADD  DEFAULT ('pending') FOR [status]
+GO
+ALTER TABLE [dbo].[inbound_receipts] ADD  DEFAULT (getdate()) FOR [created_at]
+GO
+ALTER TABLE [dbo].[inventories] ADD  DEFAULT ((0)) FOR [quantity_on_hand]
+GO
+ALTER TABLE [dbo].[inventories] ADD  DEFAULT ((0)) FOR [quantity_reserved]
+GO
+ALTER TABLE [dbo].[inventories] ADD  DEFAULT ((10)) FOR [reorder_level]
+GO
+ALTER TABLE [dbo].[payment_methods] ADD  DEFAULT ((1)) FOR [is_active]
+GO
+ALTER TABLE [dbo].[payments] ADD  DEFAULT ('pending') FOR [status]
+GO
+ALTER TABLE [dbo].[product_reviews] ADD  DEFAULT ((0)) FOR [is_approved]
+GO
+ALTER TABLE [dbo].[product_reviews] ADD  DEFAULT ('pending') FOR [status]
+GO
+ALTER TABLE [dbo].[products] ADD  DEFAULT ('draft') FOR [status]
+GO
+ALTER TABLE [dbo].[purchase_orders] ADD  DEFAULT ('pending') FOR [status]
+GO
+ALTER TABLE [dbo].[purchase_orders] ADD  DEFAULT ((0.00)) FOR [discount_amount]
+GO
+ALTER TABLE [dbo].[users] ADD  DEFAULT ('active') FOR [status]
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details] ADD  CONSTRAINT [DF_wtd_quantity]  DEFAULT ((1)) FOR [quantity]
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details] ADD  CONSTRAINT [DF_wtd_created_at]  DEFAULT (sysdatetime()) FOR [created_at]
+GO
+ALTER TABLE [dbo].[warehouse_transfers] ADD  DEFAULT ('transferred') FOR [status]
+GO
+ALTER TABLE [dbo].[addresses]  WITH CHECK ADD  CONSTRAINT [FK_addresses_users] FOREIGN KEY([user_id])
+REFERENCES [dbo].[users] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[addresses] CHECK CONSTRAINT [FK_addresses_users]
+GO
+ALTER TABLE [dbo].[branch_inventories]  WITH CHECK ADD  CONSTRAINT [FK_branch_inventories_branches] FOREIGN KEY([branch_id])
+REFERENCES [dbo].[branches] ([id])
+GO
+ALTER TABLE [dbo].[branch_inventories] CHECK CONSTRAINT [FK_branch_inventories_branches]
+GO
+ALTER TABLE [dbo].[branch_inventories]  WITH CHECK ADD  CONSTRAINT [FK_branch_inventories_product_variants] FOREIGN KEY([product_variant_id])
+REFERENCES [dbo].[product_variants] ([id])
+GO
+ALTER TABLE [dbo].[branch_inventories] CHECK CONSTRAINT [FK_branch_inventories_product_variants]
+GO
+ALTER TABLE [dbo].[branches]  WITH CHECK ADD  CONSTRAINT [FK_branches_users_manager] FOREIGN KEY([manager_user_id])
+REFERENCES [dbo].[users] ([id])
+GO
+ALTER TABLE [dbo].[branches] CHECK CONSTRAINT [FK_branches_users_manager]
+GO
+ALTER TABLE [dbo].[branches]  WITH CHECK ADD  CONSTRAINT [FK_branches_warehouses] FOREIGN KEY([warehouse_id])
+REFERENCES [dbo].[warehouses] ([id])
+GO
+ALTER TABLE [dbo].[branches] CHECK CONSTRAINT [FK_branches_warehouses]
+GO
+ALTER TABLE [dbo].[carts]  WITH CHECK ADD  CONSTRAINT [FK_carts_product_variants] FOREIGN KEY([product_variant_id])
+REFERENCES [dbo].[product_variants] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[carts] CHECK CONSTRAINT [FK_carts_product_variants]
+GO
+ALTER TABLE [dbo].[carts]  WITH CHECK ADD  CONSTRAINT [FK_carts_users] FOREIGN KEY([user_id])
+REFERENCES [dbo].[users] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[carts] CHECK CONSTRAINT [FK_carts_users]
+GO
+ALTER TABLE [dbo].[inbound_receipt_details]  WITH CHECK ADD  CONSTRAINT [FK_inbound_receipt_details_receipts] FOREIGN KEY([receipt_id])
+REFERENCES [dbo].[inbound_receipts] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[inbound_receipt_details] CHECK CONSTRAINT [FK_inbound_receipt_details_receipts]
+GO
+ALTER TABLE [dbo].[inbound_receipt_details]  WITH CHECK ADD  CONSTRAINT [FK_inbound_receipt_details_variants] FOREIGN KEY([product_variant_id])
+REFERENCES [dbo].[product_variants] ([id])
+GO
+ALTER TABLE [dbo].[inbound_receipt_details] CHECK CONSTRAINT [FK_inbound_receipt_details_variants]
+GO
+ALTER TABLE [dbo].[inbound_receipts]  WITH CHECK ADD  CONSTRAINT [FK_inbound_receipts_suppliers] FOREIGN KEY([supplier_id])
+REFERENCES [dbo].[suppliers] ([id])
+GO
+ALTER TABLE [dbo].[inbound_receipts] CHECK CONSTRAINT [FK_inbound_receipts_suppliers]
+GO
+ALTER TABLE [dbo].[inbound_receipts]  WITH CHECK ADD  CONSTRAINT [FK_inbound_receipts_users] FOREIGN KEY([created_by])
+REFERENCES [dbo].[users] ([id])
+GO
+ALTER TABLE [dbo].[inbound_receipts] CHECK CONSTRAINT [FK_inbound_receipts_users]
+GO
+ALTER TABLE [dbo].[inbound_receipts]  WITH CHECK ADD  CONSTRAINT [FK_inbound_receipts_warehouses] FOREIGN KEY([warehouse_id])
+REFERENCES [dbo].[warehouses] ([id])
+GO
+ALTER TABLE [dbo].[inbound_receipts] CHECK CONSTRAINT [FK_inbound_receipts_warehouses]
+GO
+ALTER TABLE [dbo].[inventories]  WITH CHECK ADD  CONSTRAINT [FK_inventories_product_variants] FOREIGN KEY([product_variant_id])
+REFERENCES [dbo].[product_variants] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[inventories] CHECK CONSTRAINT [FK_inventories_product_variants]
+GO
+ALTER TABLE [dbo].[inventories]  WITH CHECK ADD  CONSTRAINT [FK_inventories_warehouses] FOREIGN KEY([warehouse_id])
+REFERENCES [dbo].[warehouses] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[inventories] CHECK CONSTRAINT [FK_inventories_warehouses]
+GO
+ALTER TABLE [dbo].[inventory_transactions]  WITH CHECK ADD  CONSTRAINT [FK_inventory_transactions_product_variants] FOREIGN KEY([product_variant_id])
+REFERENCES [dbo].[product_variants] ([id])
+GO
+ALTER TABLE [dbo].[inventory_transactions] CHECK CONSTRAINT [FK_inventory_transactions_product_variants]
+GO
+ALTER TABLE [dbo].[inventory_transactions]  WITH CHECK ADD  CONSTRAINT [FK_inventory_transactions_purchase_orders] FOREIGN KEY([order_id])
+REFERENCES [dbo].[purchase_orders] ([id])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[inventory_transactions] CHECK CONSTRAINT [FK_inventory_transactions_purchase_orders]
+GO
+ALTER TABLE [dbo].[inventory_transactions]  WITH CHECK ADD  CONSTRAINT [FK_inventory_transactions_warehouses] FOREIGN KEY([warehouse_id])
+REFERENCES [dbo].[warehouses] ([id])
+GO
+ALTER TABLE [dbo].[inventory_transactions] CHECK CONSTRAINT [FK_inventory_transactions_warehouses]
+GO
+ALTER TABLE [dbo].[payments]  WITH CHECK ADD  CONSTRAINT [FK_payments_payment_methods] FOREIGN KEY([payment_method_id])
+REFERENCES [dbo].[payment_methods] ([id])
+GO
+ALTER TABLE [dbo].[payments] CHECK CONSTRAINT [FK_payments_payment_methods]
+GO
+ALTER TABLE [dbo].[payments]  WITH CHECK ADD  CONSTRAINT [FK_payments_purchase_orders] FOREIGN KEY([order_id])
+REFERENCES [dbo].[purchase_orders] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[payments] CHECK CONSTRAINT [FK_payments_purchase_orders]
+GO
+ALTER TABLE [dbo].[product_reviews]  WITH CHECK ADD  CONSTRAINT [FK_product_reviews_products] FOREIGN KEY([product_id])
+REFERENCES [dbo].[products] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[product_reviews] CHECK CONSTRAINT [FK_product_reviews_products]
+GO
+ALTER TABLE [dbo].[product_reviews]  WITH CHECK ADD  CONSTRAINT [FK_product_reviews_users] FOREIGN KEY([user_id])
+REFERENCES [dbo].[users] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[product_reviews] CHECK CONSTRAINT [FK_product_reviews_users]
+GO
+ALTER TABLE [dbo].[product_variants]  WITH CHECK ADD  CONSTRAINT [FK_product_variants_products] FOREIGN KEY([product_id])
+REFERENCES [dbo].[products] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[product_variants] CHECK CONSTRAINT [FK_product_variants_products]
+GO
+ALTER TABLE [dbo].[products]  WITH CHECK ADD  CONSTRAINT [FK_products_categories] FOREIGN KEY([category_id])
+REFERENCES [dbo].[categories] ([id])
+GO
+ALTER TABLE [dbo].[products] CHECK CONSTRAINT [FK_products_categories]
+GO
+ALTER TABLE [dbo].[products]  WITH CHECK ADD  CONSTRAINT [FK_products_suppliers] FOREIGN KEY([supplier_id])
+REFERENCES [dbo].[suppliers] ([id])
+GO
+ALTER TABLE [dbo].[products] CHECK CONSTRAINT [FK_products_suppliers]
+GO
+ALTER TABLE [dbo].[purchase_order_details]  WITH CHECK ADD  CONSTRAINT [FK_purchase_order_details_product_variants] FOREIGN KEY([product_variant_id])
+REFERENCES [dbo].[product_variants] ([id])
+GO
+ALTER TABLE [dbo].[purchase_order_details] CHECK CONSTRAINT [FK_purchase_order_details_product_variants]
+GO
+ALTER TABLE [dbo].[purchase_order_details]  WITH CHECK ADD  CONSTRAINT [FK_purchase_order_details_purchase_orders] FOREIGN KEY([order_id])
+REFERENCES [dbo].[purchase_orders] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[purchase_order_details] CHECK CONSTRAINT [FK_purchase_order_details_purchase_orders]
+GO
+ALTER TABLE [dbo].[purchase_orders]  WITH CHECK ADD  CONSTRAINT [FK_purchase_orders_branches] FOREIGN KEY([branch_id])
+REFERENCES [dbo].[branches] ([id])
+GO
+ALTER TABLE [dbo].[purchase_orders] CHECK CONSTRAINT [FK_purchase_orders_branches]
+GO
+ALTER TABLE [dbo].[purchase_orders]  WITH CHECK ADD  CONSTRAINT [FK_purchase_orders_discounts] FOREIGN KEY([discount_id])
+REFERENCES [dbo].[discounts] ([id])
+GO
+ALTER TABLE [dbo].[purchase_orders] CHECK CONSTRAINT [FK_purchase_orders_discounts]
+GO
+ALTER TABLE [dbo].[purchase_orders]  WITH CHECK ADD  CONSTRAINT [FK_purchase_orders_users] FOREIGN KEY([user_id])
+REFERENCES [dbo].[users] ([id])
+GO
+ALTER TABLE [dbo].[purchase_orders] CHECK CONSTRAINT [FK_purchase_orders_users]
+GO
+ALTER TABLE [dbo].[users]  WITH CHECK ADD  CONSTRAINT [FK_users_roles] FOREIGN KEY([role_id])
+REFERENCES [dbo].[roles] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[users] CHECK CONSTRAINT [FK_users_roles]
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details]  WITH CHECK ADD  CONSTRAINT [FK_wtd_product_variants] FOREIGN KEY([product_variant_id])
+REFERENCES [dbo].[product_variants] ([id])
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details] CHECK CONSTRAINT [FK_wtd_product_variants]
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details]  WITH CHECK ADD  CONSTRAINT [FK_wtd_transfers] FOREIGN KEY([transfer_id])
+REFERENCES [dbo].[warehouse_transfers] ([id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details] CHECK CONSTRAINT [FK_wtd_transfers]
+GO
+ALTER TABLE [dbo].[warehouse_transfers]  WITH CHECK ADD  CONSTRAINT [FK_warehouse_transfers_from_warehouses] FOREIGN KEY([from_warehouse_id])
+REFERENCES [dbo].[warehouses] ([id])
+GO
+ALTER TABLE [dbo].[warehouse_transfers] CHECK CONSTRAINT [FK_warehouse_transfers_from_warehouses]
+GO
+ALTER TABLE [dbo].[warehouse_transfers]  WITH CHECK ADD  CONSTRAINT [FK_warehouse_transfers_to_branches] FOREIGN KEY([to_branch_id])
+REFERENCES [dbo].[branches] ([id])
+GO
+ALTER TABLE [dbo].[warehouse_transfers] CHECK CONSTRAINT [FK_warehouse_transfers_to_branches]
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details]  WITH CHECK ADD  CONSTRAINT [CK_wtd_price_nonnegative] CHECK  (([price] IS NULL OR [price]>=(0)))
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details] CHECK CONSTRAINT [CK_wtd_price_nonnegative]
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details]  WITH CHECK ADD  CONSTRAINT [CK_wtd_quantity_pos] CHECK  (([quantity]>=(1)))
+GO
+ALTER TABLE [dbo].[warehouse_transfer_details] CHECK CONSTRAINT [CK_wtd_quantity_pos]
+GO
