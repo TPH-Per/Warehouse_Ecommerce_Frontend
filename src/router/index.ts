@@ -9,30 +9,44 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { setupLayouts } from 'virtual:generated-layouts'
 
 
+
 // import { routes } from 'vue-router/auto-routes'
 
 const routes = [
   {
     path: '/',
-    name: 'home-page',
+    name: 'HomePage',
     component: () => import('@/layouts/home.vue'),
     children: [
       {
         path: '',
-        name: 'home',
+        name: 'Home',
         component: () => import('@/pages/HomePage.vue')
-      }
-    ]
-  },
-  {
-    path: '/product-detail',
-    name: 'product-detail',
-    component: () => import('@/layouts/product-detail.vue'),
-    children: [
+      },
       {
-        path: '',
-        name: 'product-detail-page',
+        path: '/productlist',
+        name: 'ProductList',
+        component: () => import('@/pages/ProductListPage.vue')
+      },
+      {
+        path: '/product',
+        name: 'ProductDetail',
         component: () => import('@/pages/ProductDetailPage.vue')
+      },
+      {
+        path: '/cart',
+        name: 'Cart',
+        component: () => import('@/pages/CartPage.vue')
+      },
+      {
+        path: '/wishlist',
+        name: 'WishList',
+        component: () => import('@/pages/WishListPage.vue')
+      },
+      {
+        path: '/checkout',
+        name: 'Checkout',
+        component: () => import('@/pages/CheckoutPage.vue')
       }
     ]
   }

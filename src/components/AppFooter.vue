@@ -1,124 +1,156 @@
 <template>
-  <v-footer class="pa-0 flex-column overflow-hidden" style="background: transparent;">
-    <div class="footer-bg position-absolute inset-0"></div>
-    <div class="hero-grid position-absolute inset-0 opacity-40"></div>
-
-    <v-container class="relative py-16 text-white" style="z-index: 1;">
+  <v-footer class="app-footer pa-0 flex-column overflow-hidden">
+    <!-- Grid Pattern Overlay -->
+    <div class="footer-grid-overlay" />
+    
+    <v-container class="py-16 position-relative" style="z-index: 1;">
       <v-row class="mb-12">
+        <!-- Brand Section -->
         <v-col cols="12" lg="8">
-          <v-sheet
-            class="glass-panel pa-8 rounded-xl h-100"
-            color="transparent"
-          >
-            <div class="d-flex align-center gap-4 mb-6">
-              <v-avatar
-                size="48"
-                class="rounded-lg font-weight-black text-white"
-                style="background: linear-gradient(to bottom right, #ec4899, #0ea5e9);"
-              >
-                PW
+          <v-sheet class="glass-panel pa-8 rounded-xl h-100" color="transparent">
+            <div class="d-flex align-center ga-4 mb-6">
+              <v-avatar size="56" class="logo-avatar rounded-lg">
+                <span class="text-h5 font-weight-black">WS</span>
               </v-avatar>
               <div>
-                <p class="text-uppercase text-caption font-weight-thin tracking-widest text-white-50">
-                  PerW Collectibles
+                <p class="text-overline tracking-widest text-medium-emphasis mb-1">
+                  WIBU SHOP COLLECTIBLES
                 </p>
-                <p class="text-h5 font-weight-semibold">Thế giới của những giấc mơ wibu</p>
+                <p class="text-h5 font-weight-bold gradient-text">
+                  Thế giới của những giấc mơ wibu
+                </p>
               </div>
             </div>
-            <p class="text-body-1 text-white-70 max-w-2xl leading-relaxed mb-8">
+            <p class="text-body-1 text-medium-emphasis mb-8" style="max-width: 600px; line-height: 1.8;">
               Bổ sung góc trưng bày của bạn bằng những sản phẩm chính hãng được tuyển chọn bởi các chuyên gia otaku.
               Từ figures tỉ lệ cao cấp đến nendoroids đáng yêu, mỗi tuần chúng tôi đều cập nhật các deal độc quyền.
             </p>
-            <div class="d-flex flex-wrap gap-3">
-              <v-chip color="white" variant="tonal" border>24/7 hỗ trợ</v-chip>
-              <v-chip color="white" variant="tonal" border>Vận chuyển toàn cầu</v-chip>
-              <v-chip color="white" variant="tonal" border>Bảo hành sản phẩm 365 ngày</v-chip>
+            <div class="d-flex flex-wrap ga-3">
+              <v-chip color="primary" variant="tonal" prepend-icon="mdi-headset">24/7 hỗ trợ</v-chip>
+              <v-chip color="primary" variant="tonal" prepend-icon="mdi-truck-fast">Vận chuyển toàn cầu</v-chip>
+              <v-chip color="primary" variant="tonal" prepend-icon="mdi-shield-check">Bảo hành 365 ngày</v-chip>
             </div>
           </v-sheet>
         </v-col>
 
+        <!-- Newsletter Section -->
         <v-col cols="12" lg="4">
-          <v-sheet
-            class="glass-panel pa-8 rounded-xl shine-border"
-            color="transparent"
-          >
-            <h3 class="text-h6 font-weight-semibold mb-2">Đăng ký newsletter</h3>
-            <p class="text-body-2 text-white-70 mb-6">
+          <v-sheet class="glass-panel pa-8 rounded-xl newsletter-box" color="transparent">
+            <v-icon size="40" color="secondary" class="mb-4">mdi-email-newsletter</v-icon>
+            <h3 class="text-h6 font-weight-bold mb-2">Đăng ký newsletter</h3>
+            <p class="text-body-2 text-medium-emphasis mb-6">
               Nhận ưu đãi flash, lịch pre-order và hậu trường studio mỗi tuần.
             </p>
             <v-text-field
               placeholder="Email của bạn"
               variant="outlined"
               rounded="xl"
-              bg-color="white-lighten-4"
-              class="mb-4"
+              density="comfortable"
+              class="mb-4 newsletter-input"
               hide-details
-            ></v-text-field>
-            <v-btn
-              block
-              color="pink-accent-3"
-              rounded="xl"
-              size="large"
-              class="text-capitalize"
-            >
+              prepend-inner-icon="mdi-at"
+            />
+            <v-btn block color="secondary" rounded="xl" size="large" class="font-weight-bold">
+              <v-icon start>mdi-send</v-icon>
               Theo dõi cập nhật
             </v-btn>
           </v-sheet>
         </v-col>
       </v-row>
 
+      <!-- Links Grid -->
       <v-row>
         <v-col cols="6" md="3">
-          <h4 class="text-subtitle-1 font-weight-bold mb-4">Danh mục nổi bật</h4>
-          <v-list bg-color="transparent" density="compact" class="pa-0 text-white-70">
-            <v-list-item to="/products" class="pa-0 min-h-0 link-hover">Tất cả sản phẩm</v-list-item>
-            <v-list-item to="/products?category=figures" class="pa-0 min-h-0 link-hover">Figures</v-list-item>
-            <v-list-item to="/products?category=nendoroids" class="pa-0 min-h-0 link-hover">Nendoroids</v-list-item>
-            <v-list-item to="/products?category=plushies" class="pa-0 min-h-0 link-hover">Gấu bông</v-list-item>
+          <h4 class="text-subtitle-1 font-weight-bold mb-4 neon-text-primary">Danh mục nổi bật</h4>
+          <v-list bg-color="transparent" density="compact" class="pa-0">
+            <v-list-item to="/products" class="link-item pa-0 min-h-0 mb-2">
+              <template v-slot:prepend>
+                <v-icon size="small" class="mr-2">mdi-chevron-right</v-icon>
+              </template>
+              Tất cả sản phẩm
+            </v-list-item>
+            <v-list-item to="/products?category=figures" class="link-item pa-0 min-h-0 mb-2">
+              <template v-slot:prepend>
+                <v-icon size="small" class="mr-2">mdi-chevron-right</v-icon>
+              </template>
+              Figures
+            </v-list-item>
+            <v-list-item to="/products?category=nendoroids" class="link-item pa-0 min-h-0 mb-2">
+              <template v-slot:prepend>
+                <v-icon size="small" class="mr-2">mdi-chevron-right</v-icon>
+              </template>
+              Nendoroids
+            </v-list-item>
+            <v-list-item to="/products?category=plushies" class="link-item pa-0 min-h-0 mb-2">
+              <template v-slot:prepend>
+                <v-icon size="small" class="mr-2">mdi-chevron-right</v-icon>
+              </template>
+              Gấu bông
+            </v-list-item>
           </v-list>
         </v-col>
 
         <v-col cols="6" md="3">
-          <h4 class="text-subtitle-1 font-weight-bold mb-4">Hỗ trợ</h4>
-          <v-list bg-color="transparent" density="compact" class="pa-0 text-white-70">
-            <v-list-item href="#" class="pa-0 min-h-0 link-hover">Câu hỏi thường gặp</v-list-item>
-            <v-list-item href="#" class="pa-0 min-h-0 link-hover">Chính sách giao hàng</v-list-item>
-            <v-list-item href="#" class="pa-0 min-h-0 link-hover">Theo dõi đơn</v-list-item>
-            <v-list-item href="#" class="pa-0 min-h-0 link-hover">Yêu cầu bảo hành</v-list-item>
+          <h4 class="text-subtitle-1 font-weight-bold mb-4 neon-text-primary">Hỗ trợ</h4>
+          <v-list bg-color="transparent" density="compact" class="pa-0">
+            <v-list-item href="#" class="link-item pa-0 min-h-0 mb-2">Câu hỏi thường gặp</v-list-item>
+            <v-list-item href="#" class="link-item pa-0 min-h-0 mb-2">Chính sách giao hàng</v-list-item>
+            <v-list-item href="#" class="link-item pa-0 min-h-0 mb-2">Theo dõi đơn</v-list-item>
+            <v-list-item href="#" class="link-item pa-0 min-h-0 mb-2">Yêu cầu bảo hành</v-list-item>
           </v-list>
         </v-col>
 
         <v-col cols="6" md="3">
-          <h4 class="text-subtitle-1 font-weight-bold mb-4">Cộng đồng</h4>
-          <v-list bg-color="transparent" density="compact" class="pa-0 text-white-70">
-            <v-list-item href="#" class="pa-0 min-h-0 link-hover">Discord collectors</v-list-item>
-            <v-list-item href="#" class="pa-0 min-h-0 link-hover">Blog review</v-list-item>
-            <v-list-item href="#" class="pa-0 min-h-0 link-hover">Sự kiện offline</v-list-item>
-            <v-list-item href="#" class="pa-0 min-h-0 link-hover">Chương trình đại sứ</v-list-item>
+          <h4 class="text-subtitle-1 font-weight-bold mb-4 neon-text-primary">Cộng đồng</h4>
+          <v-list bg-color="transparent" density="compact" class="pa-0">
+            <v-list-item href="#" class="link-item pa-0 min-h-0 mb-2">Discord collectors</v-list-item>
+            <v-list-item href="#" class="link-item pa-0 min-h-0 mb-2">Blog review</v-list-item>
+            <v-list-item href="#" class="link-item pa-0 min-h-0 mb-2">Sự kiện offline</v-list-item>
+            <v-list-item href="#" class="link-item pa-0 min-h-0 mb-2">Chương trình đại sứ</v-list-item>
           </v-list>
         </v-col>
 
         <v-col cols="6" md="3">
-          <h4 class="text-subtitle-1 font-weight-bold mb-4">Kết nối</h4>
-          <div class="text-body-2 text-white-70 space-y-2">
-            <p><a href="mailto:hello@perw.vn" class="text-decoration-none text-white-70 link-hover">hello@perw.vn</a></p>
-            <p><a href="tel:+84123456789" class="text-decoration-none text-white-70 link-hover">+84 123 456 789</a></p>
-            <p>77 Nguyễn Trãi, Hà Nội</p>
-            <div class="d-flex gap-3 pt-4">
-              <v-btn icon="mdi-facebook" size="small" variant="tonal" color="white"></v-btn>
-              <v-btn icon="mdi-instagram" size="small" variant="tonal" color="white"></v-btn>
-              <v-btn icon="mdi-youtube" size="small" variant="tonal" color="white"></v-btn>
+          <h4 class="text-subtitle-1 font-weight-bold mb-4 neon-text-primary">Kết nối</h4>
+          <div class="text-body-2 text-medium-emphasis">
+            <p class="mb-2">
+              <v-icon size="small" class="mr-2">mdi-email</v-icon>
+              <a href="mailto:hello@wibushop.vn" class="link-item">hello@wibushop.vn</a>
+            </p>
+            <p class="mb-2">
+              <v-icon size="small" class="mr-2">mdi-phone</v-icon>
+              <a href="tel:+84123456789" class="link-item">+84 123 456 789</a>
+            </p>
+            <p class="mb-4">
+              <v-icon size="small" class="mr-2">mdi-map-marker</v-icon>
+              77 Nguyễn Trãi, Hà Nội
+            </p>
+            <div class="d-flex ga-2">
+              <v-btn icon size="small" variant="outlined" color="primary" class="social-btn">
+                <v-icon>mdi-facebook</v-icon>
+              </v-btn>
+              <v-btn icon size="small" variant="outlined" color="primary" class="social-btn">
+                <v-icon>mdi-instagram</v-icon>
+              </v-btn>
+              <v-btn icon size="small" variant="outlined" color="primary" class="social-btn">
+                <v-icon>mdi-youtube</v-icon>
+              </v-btn>
+              <v-btn icon size="small" variant="outlined" color="primary" class="social-btn">
+                <v-icon>mdi-twitter</v-icon>
+              </v-btn>
             </div>
           </div>
         </v-col>
       </v-row>
 
-      <v-divider class="mt-12 mb-8 opacity-20"></v-divider>
-      <div class="d-flex flex-column flex-md-row justify-space-between align-center text-caption text-white-50">
-        <p>© 2025 PerW Collective. All rights reserved.</p>
-        <div class="d-flex gap-4 mt-3 mt-md-0">
-          <a href="#" class="text-decoration-none text-white-50 link-hover">Chính sách bảo mật</a>
-          <a href="#" class="text-decoration-none text-white-50 link-hover">Điều khoản</a>
+      <!-- Bottom Bar -->
+      <v-divider class="mt-12 mb-8" style="border-color: rgba(0, 212, 255, 0.15);" />
+      <div class="d-flex flex-column flex-md-row justify-space-between align-center text-caption text-medium-emphasis">
+        <p>© 2025 Wibu Shop Collective. All rights reserved.</p>
+        <div class="d-flex ga-4 mt-3 mt-md-0">
+          <a href="#" class="link-item">Chính sách bảo mật</a>
+          <a href="#" class="link-item">Điều khoản</a>
+          <a href="#" class="link-item">Cookies</a>
         </div>
       </div>
     </v-container>
@@ -126,51 +158,86 @@
 </template>
 
 <style scoped>
-.footer-bg {
-  background: linear-gradient(to bottom, #0f172a, #020617);
-  width: 100%;
-  height: 100%;
+.app-footer {
+  background: linear-gradient(180deg, #0a0a0f 0%, #050508 100%) !important;
+  position: relative;
 }
 
-.hero-grid {
-  background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
-  background-size: 32px 32px;
+.footer-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.5;
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.03) !important;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
-.shine-border {
+.logo-avatar {
+  background: linear-gradient(135deg, #00d4ff 0%, #ff00ff 100%);
+  color: #000;
+}
+
+.newsletter-box {
   position: relative;
   overflow: hidden;
 }
 
-.shine-border::after {
-  content: "";
+.newsletter-box::before {
+  content: '';
   position: absolute;
-  top: -50%; left: -50%; width: 200%; height: 200%;
-  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
-  transform: rotate(45deg);
-  animation: shine 6s infinite;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00d4ff, #ff00ff);
 }
 
-@keyframes shine {
-  0% { transform: translateX(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) rotate(45deg); }
+.newsletter-input :deep(.v-field) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-.text-white-70 { color: rgba(255, 255, 255, 0.7); }
-.text-white-50 { color: rgba(255, 255, 255, 0.5); }
+.newsletter-input :deep(.v-field:focus-within) {
+  border-color: rgba(255, 0, 255, 0.5);
+}
 
-.link-hover:hover {
-  color: white !important;
-  transition: 0.3s;
+.link-item {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: all 0.3s ease;
   cursor: pointer;
 }
 
-.gap-3 { gap: 12px; }
-.gap-4 { gap: 16px; }
+.link-item:hover {
+  color: #00d4ff !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.social-btn {
+  transition: all 0.3s ease;
+}
+
+.social-btn:hover {
+  background: rgba(0, 212, 255, 0.15) !important;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.neon-text-primary {
+  color: #00d4ff;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #00d4ff 0%, #ff00ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 </style>
