@@ -424,6 +424,32 @@ const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,' + btoa(`
   </svg>
 `);
 
+// ========== IMAGE HELPER ==========
+// Base URL của API server
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:44377';
+
+/**
+ * Chuyển đổi đường dẫn ảnh từ database thành URL đầy đủ
+ */
+const getImageUrl = (imagePath: string | null | undefined): string => {
+  if (!imagePath || imagePath === '' || imagePath === 'null') {
+    return PLACEHOLDER_IMAGE;
+  }
+  
+  // Nếu đường dẫn đã đầy đủ (http/https)
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // Nếu là đường dẫn tương đối, thêm base URL
+  if (imagePath.startsWith('/')) {
+    return `${API_BASE_URL}${imagePath}`;
+  }
+  
+  // Trường hợp còn lại (chỉ có tên file)
+  return `${API_BASE_URL}/wwwroot/uploads/products/${imagePath}`;
+};
+
 // ========== LOCAL STATE ==========
 const selectedImageIndex = ref(0);
 const quantity = ref(1);
@@ -458,7 +484,8 @@ const product = computed(() => {
       sku: v.Sku ?? v.sku ?? '',
       price: v.Price ?? v.price ?? 0,
       original_price: v.OriginalPrice ?? v.original_price ?? null,
-      image_url: v.ImageUrl ?? v.image_url ?? PLACEHOLDER_IMAGE
+      // Xử lý đường dẫn ảnh - chuyển đổi sang URL đầy đủ
+      image_url: getImageUrl(v.ImageUrl ?? v.image_url)
     })),
     images: (p as any).Images ?? (p as any).images ?? [],
     rating: (p as any).Rating ?? (p as any).rating ?? 0,
@@ -502,11 +529,14 @@ const breadcrumbs = computed(() => [
 const allImages = computed(() => {
   if (!product.value) return [PLACEHOLDER_IMAGE];
   
+  // Variant images đã được xử lý qua getImageUrl trong product computed
   const variantImages = product.value.variants
     .map((v: any) => v.image_url)
     .filter((url: string) => url && url !== PLACEHOLDER_IMAGE);
   
-  const productImages = product.value.images || [];
+  // Product images cũng cần xử lý qua getImageUrl
+  const rawProductImages = product.value.images || [];
+  const productImages = rawProductImages.map((img: string) => getImageUrl(img));
   
   const allImgs = [...new Set([...variantImages, ...productImages])].slice(0, 5);
   

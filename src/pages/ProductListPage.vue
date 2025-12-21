@@ -35,9 +35,70 @@
     <!-- Filters Section -->
     <v-container class="py-2">
       <v-card class="filter-card pa-4 rounded-xl" variant="outlined">
+        <!-- Thông báo về chính sách hiển thị sản phẩm -->
+        <v-alert
+          v-if="!loading && totalProducts > 0 && productsStore.useInStockApi"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+          closable
+        >
+          <v-icon start size="small">mdi-information</v-icon>
+          Chỉ hiển thị sản phẩm <strong>có sẵn trong kho</strong> tại các chi nhánh.
+          <span v-if="selectedBranchId"> Đang lọc theo chi nhánh đã chọn.</span>
+        </v-alert>
+
+        <!-- Thông báo chế độ test (hiển thị tất cả sản phẩm) -->
+        <v-alert
+          v-if="!loading && totalProducts > 0 && !productsStore.useInStockApi"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+          closable
+        >
+          <v-icon start size="small">mdi-alert</v-icon>
+          <strong>CHẾ ĐỘ TEST:</strong> Đang hiển thị tất cả sản phẩm active. 
+          Bật <code>useInStockApi = true</code> trong store để chỉ hiển thị sản phẩm có trong kho.
+        </v-alert>
+
         <v-row align="center" dense>
-          <v-col cols="12" md="3">
-            <div class="text-caption text-medium-emphasis">{{ totalProducts }} sản phẩm</div>
+          <v-col cols="12" md="2">
+            <div class="d-flex align-center ga-2">
+              <v-icon size="small" color="success">mdi-check-circle</v-icon>
+              <div class="text-caption text-medium-emphasis">{{ totalProducts }} sản phẩm</div>
+            </div>
+          </v-col>
+
+          <!-- Bộ lọc Chi nhánh -->
+          <v-col cols="6" sm="4" md="2">
+            <v-select
+              v-model="selectedBranchId"
+              :items="branches"
+              item-title="name"
+              item-value="id"
+              label="Chi nhánh"
+              variant="outlined"
+              rounded="lg"
+              density="compact"
+              hide-details
+              clearable
+              prepend-inner-icon="mdi-store"
+              placeholder="Tất cả chi nhánh"
+            >
+              <template v-slot:prepend-item>
+                <v-list-item
+                  title="Tất cả chi nhánh"
+                  @click="selectedBranchId = null"
+                >
+                  <template v-slot:prepend>
+                    <v-icon color="primary">mdi-store-check</v-icon>
+                  </template>
+                </v-list-item>
+                <v-divider class="my-1" />
+              </template>
+            </v-select>
           </v-col>
 
           <v-col cols="6" sm="4" md="2">
@@ -72,19 +133,6 @@
 
           <v-col cols="6" sm="4" md="2">
             <v-select
-              v-model="filters.status"
-              :items="statusOptions"
-              label="Trạng thái"
-              variant="outlined"
-              rounded="lg"
-              density="compact"
-              hide-details
-              clearable
-            />
-          </v-col>
-
-          <v-col cols="6" sm="4" md="2">
-            <v-select
               v-model="sortBy"
               :items="sortOptions"
               label="Sắp xếp"
@@ -95,7 +143,7 @@
             />
           </v-col>
 
-          <v-col cols="12" sm="4" md="1" class="d-flex justify-end">
+          <v-col cols="12" sm="4" md="2" class="d-flex justify-end ga-2">
             <v-btn-toggle v-model="viewMode" mandatory rounded="lg" color="primary" variant="outlined" density="compact">
               <v-btn value="grid" icon="mdi-view-grid" size="small" />
               <v-btn value="list" icon="mdi-view-list" size="small" />
@@ -216,18 +264,23 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useProductsStore } from '@/stores/products.store';
 import { useCategoriesStore } from '@/stores/categories.store';
 import { useSuppliersStore } from '@/stores/suppliers.store';
+import { useBranchesStore } from '@/stores/branches.store';
 import type { Product } from '@/types';
 
 // ========== PINIA STORES ==========
 const productsStore = useProductsStore();
 const categoriesStore = useCategoriesStore();
 const suppliersStore = useSuppliersStore();
+const branchesStore = useBranchesStore();
 
 // ========== LOCAL STATE ==========
 const viewMode = ref<'grid' | 'list'>('grid');
 const searchQuery = ref('');
 const sortBy = ref('newest');
 const currentPage = ref(1);
+
+// Chi nhánh được chọn để lọc sản phẩm
+const selectedBranchId = ref<number | null>(null);
 
 const filters = ref({
   category_id: null as number | null,
@@ -246,14 +299,16 @@ const totalPages = computed(() => Math.ceil(productsStore.total / 12) || 1);
 const categories = computed(() => categoriesStore.categoryOptions);
 const suppliers = computed(() => suppliersStore.supplierOptions);
 
-// ========== STATIC OPTIONS ==========
-const statusOptions = [
-  { title: 'Tất cả', value: null },
-  { title: 'Đang bán', value: 'active' },
-  { title: 'Pre-order', value: 'pre-order' },
-  { title: 'Không hoạt động', value: 'inactive' },
-];
+// Chi nhánh - để lọc sản phẩm theo tồn kho tại chi nhánh
+const branches = computed(() => {
+  return branchesStore.branches.map((b: any) => ({
+    id: b.Id ?? b.id,
+    name: b.Name ?? b.name ?? 'Chi nhánh',
+    location: b.Location ?? b.location ?? ''
+  }));
+});
 
+// ========== STATIC OPTIONS ==========
 const sortOptions = [
   { title: 'Mới nhất', value: 'newest' },
   { title: 'Tên A-Z', value: 'name_asc' },
@@ -281,6 +336,10 @@ const formatPrice = (price: number) => {
   }).format(price);
 };
 
+// ========== IMAGE HELPER ==========
+// Base URL của API server để load ảnh
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:44377';
+
 // Lấy hình ảnh sản phẩm - với placeholder nếu không có ảnh
 const getProductImage = (product: Product) => {
   const imageUrl = (product as any).ImageUrl || (product as any).imageUrl || product.ImageUrl;
@@ -290,7 +349,22 @@ const getProductImage = (product: Product) => {
     return PLACEHOLDER_IMAGE;
   }
   
-  return imageUrl;
+  // Xử lý đường dẫn ảnh từ server ASP.NET
+  // Giữ nguyên path từ database (bao gồm /wwwroot nếu có)
+  let cleanPath = imageUrl;
+  
+  // Nếu đường dẫn bắt đầu bằng http/https thì đã đầy đủ
+  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+    return cleanPath;
+  }
+  
+  // Nếu là đường dẫn tương đối, thêm base URL
+  if (cleanPath.startsWith('/')) {
+    return `${API_BASE_URL}${cleanPath}`;
+  }
+  
+  // Trường hợp còn lại (chỉ có tên file)
+  return `${API_BASE_URL}/wwwroot/uploads/products/${cleanPath}`;
 };
 
 // Lấy giá thấp nhất
@@ -299,13 +373,17 @@ const getLowestPrice = (product: Product) => {
   return price || 0;
 };
 
-// Fetch products từ store
+// Fetch products từ store - CHỈ LẤY SẢN PHẨM CÓ TRONG KHO
 const fetchProducts = async () => {
+  // Cập nhật branch được chọn vào store
+  productsStore.setSelectedBranch(selectedBranchId.value);
+  
   if (searchQuery.value.trim()) {
     await productsStore.searchProducts(searchQuery.value);
   } else if (filters.value.category_id) {
     await productsStore.fetchByCategory(filters.value.category_id);
   } else {
+    // Mặc định: Lấy sản phẩm có trong kho
     await productsStore.fetchProducts();
   }
 };
@@ -322,6 +400,7 @@ const clearFilters = () => {
 watch(
   () => filters.value.category_id,
   (newVal) => {
+    productsStore.setSelectedBranch(selectedBranchId.value);
     if (newVal) {
       productsStore.fetchByCategory(newVal);
     } else {
@@ -330,11 +409,23 @@ watch(
   }
 );
 
+// Watch for branch changes - Khi đổi chi nhánh, fetch lại sản phẩm có trong kho của chi nhánh đó
+watch(
+  () => selectedBranchId.value,
+  (newBranchId) => {
+    console.log('🏪 Đổi chi nhánh:', newBranchId ?? 'Tất cả');
+    productsStore.setSelectedBranch(newBranchId);
+    fetchProducts();
+  }
+);
+
 // ========== LIFECYCLE ==========
 onMounted(async () => {
   // Fetch tất cả data cần thiết khi component mount
+  // Bao gồm cả danh sách chi nhánh để người dùng có thể lọc
   await Promise.all([
-    productsStore.fetchProducts(),
+    branchesStore.fetchBranches(),
+    productsStore.fetchProducts(), // Mặc định chỉ lấy sản phẩm có trong kho
     categoriesStore.fetchCategories(),
     suppliersStore.fetchSuppliers(),
   ]);

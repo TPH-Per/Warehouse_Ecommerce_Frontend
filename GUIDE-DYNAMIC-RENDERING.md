@@ -11,9 +11,10 @@
 3. [ProductListPage - Danh sách sản phẩm](#3-productlistpage---danh-sách-sản-phẩm)
 4. [ProductDetailPage - Chi tiết sản phẩm](#4-productdetailpage---chi-tiết-sản-phẩm)
 5. [Branches & Inventory - Chi nhánh và tồn kho](#5-branches--inventory---chi-nhánh-và-tồn-kho)
-6. [API Controllers cần tạo (C#)](#6-api-controllers-cần-tạo-c)
-7. [Xử lý PascalCase vs camelCase](#7-xử-lý-pascalcase-vs-camelcase)
-8. [Best Practices](#8-best-practices)
+6. [**🆕 Lọc sản phẩm theo tồn kho chi nhánh**](#6-lọc-sản-phẩm-theo-tồn-kho-chi-nhánh)
+7. [API Controllers cần tạo (C#)](#7-api-controllers-cần-tạo-c)
+8. [Xử lý PascalCase vs camelCase](#8-xử-lý-pascalcase-vs-camelcase)
+9. [Best Practices](#9-best-practices)
 
 ---
 
@@ -634,6 +635,8 @@ jsonFormatter.SerializerSettings.ContractResolver =
 - [ ] Test error states
 - [ ] Test empty states
 - [ ] Kiểm tra placeholder images hiển thị đúng
+- [ ] **🆕 Tạo API endpoint `/api/products/in-stock`**
+- [ ] **🆕 Test filter theo chi nhánh**
 
 ---
 
@@ -641,9 +644,141 @@ jsonFormatter.SerializerSettings.ContractResolver =
 
 - `GUIDE-FETCH-DATA.md` - Hướng dẫn fetch data chi tiết
 - `GUIDE-API-CONTROLLER.md` - Hướng dẫn tạo API Controller
+- `GUIDE-BACKEND-PRODUCTS-INSTOCK.md` - **🆕 Hướng dẫn tạo API lọc sản phẩm theo tồn kho**
 - `TODO-API-INTEGRATION.md` - Danh sách APIs cần tích hợp
 - `db(1).txt` - Database schema
 
 ---
 
-*Tài liệu này được tạo bởi Antigravity AI - 21/12/2024*
+## 6. LỌC SẢN PHẨM THEO TỒN KHO CHI NHÁNH
+
+### 6.1 Yêu cầu nghiệp vụ
+
+> **Sản phẩm chỉ được hiển thị trên trang danh sách nếu tồn tại ít nhất 1 variant có trong kho của chi nhánh** (`quantity_on_hand > 0` trong bảng `branch_inventories`)
+
+### 6.2 Kiến trúc giải pháp
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ProductListPage.vue                          │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ selectedBranchId = ref<number | null>(null)               │  │
+│  │ watch(selectedBranchId, () => fetchProducts())            │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    products.store.ts                            │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ fetchProducts() {                                          │  │
+│  │   // Gọi API /products/in-stock?branchId=X                │  │
+│  │   const response = await productsApi.getProductsInStock(); │  │
+│  │ }                                                          │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    ASP.NET API Controller                       │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ GET /api/products/in-stock?branchId=1                      │  │
+│  │                                                            │  │
+│  │ SELECT products WHERE EXISTS(                              │  │
+│  │   SELECT 1 FROM branch_inventories                         │  │
+│  │   WHERE product_variant_id = variants.id                   │  │
+│  │   AND quantity_on_hand > 0                                 │  │
+│  │   AND branch_id = @branchId                                │  │
+│  │ )                                                          │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 API Endpoints mới
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/products/in-stock` | GET | Lấy sản phẩm có trong kho |
+| `/api/products?inStock=true&branchId=1` | GET | Fallback: filter qua param |
+
+### 6.4 Thay đổi trong products.store.ts
+
+```typescript
+// Thêm state để lưu branch đã chọn
+const selectedBranchId = ref<number | null>(null);
+
+// Thêm action set branch
+const setSelectedBranch = (branchId: number | null) => {
+    selectedBranchId.value = branchId;
+};
+
+// Cập nhật fetchProducts để gọi API in-stock
+const fetchProducts = async () => {
+    try {
+        // Ưu tiên API /products/in-stock
+        const response = await productsApi.getProductsInStock(
+            selectedBranchId.value || undefined
+        );
+        // ...
+    } catch (err) {
+        // Fallback: Gọi /products với param inStock=true
+        const response = await productsApi.getAll({ inStock: true });
+    }
+};
+```
+
+### 6.5 Thay đổi trong ProductListPage.vue
+
+```vue
+<template>
+  <!-- Thêm filter chi nhánh -->
+  <v-select
+    v-model="selectedBranchId"
+    :items="branches"
+    label="Chi nhánh"
+    clearable
+  />
+  
+  <!-- Thông báo chính sách -->
+  <v-alert type="info">
+    Chỉ hiển thị sản phẩm <strong>có sẵn trong kho</strong> 
+    tại các chi nhánh.
+  </v-alert>
+</template>
+
+<script setup>
+// Import branches store
+import { useBranchesStore } from '@/stores/branches.store';
+const branchesStore = useBranchesStore();
+
+// Computed branches
+const branches = computed(() => branchesStore.branches.map(b => ({
+  id: b.Id ?? b.id,
+  name: b.Name ?? b.name
+})));
+
+// Watch branch changes
+watch(selectedBranchId, () => {
+  productsStore.setSelectedBranch(selectedBranchId.value);
+  fetchProducts();
+});
+</script>
+```
+
+### 6.6 Bảng database liên quan
+
+```sql
+-- branch_inventories: Tồn kho tại chi nhánh
+CREATE TABLE branch_inventories (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    branch_id BIGINT NOT NULL,               -- FK -> branches
+    product_variant_id BIGINT NOT NULL,      -- FK -> product_variants
+    quantity_on_hand INT NOT NULL DEFAULT 0, -- Số lượng có sẵn
+    quantity_reserved INT NOT NULL DEFAULT 0 -- Số lượng đã đặt
+);
+```
+
+---
+
+*Tài liệu này được cập nhật bởi Antigravity AI - 21/12/2024*
+
