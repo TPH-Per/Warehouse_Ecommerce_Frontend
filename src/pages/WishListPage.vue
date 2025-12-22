@@ -289,6 +289,15 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useCartStore } from '@/stores/cart.store';
+import { useAuthStore } from '@/stores/auth.store';
+import { useToast } from '@/composables/useToast';
+
+const router = useRouter();
+const cartStore = useCartStore();
+const authStore = useAuthStore();
+const toast = useToast();
 
 // Types
 interface Category {
@@ -440,19 +449,63 @@ const getDiscountPercent = (item: WishlistItem) => {
 
 const removeFromWishlist = (item: WishlistItem) => {
   const index = wishlistItems.value.findIndex(i => i.id === item.id);
-  if (index > -1) wishlistItems.value.splice(index, 1);
+  if (index > -1) {
+    wishlistItems.value.splice(index, 1);
+    toast.success(`Đã xóa "${item.product.name}" khỏi yêu thích`);
+  }
 };
 
 const clearWishlist = () => {
-  if (confirm('Bạn có chắc muốn xóa tất cả?')) wishlistItems.value = [];
+  if (confirm('Bạn có chắc muốn xóa tất cả?')) {
+    const count = wishlistItems.value.length;
+    wishlistItems.value = [];
+    toast.success(`Đã xóa ${count} sản phẩm khỏi yêu thích`);
+  }
 };
 
-const addToCart = (item: WishlistItem) => {
-  alert(`Đã thêm "${item.product.name}" vào giỏ hàng!`);
+const addToCart = async (item: WishlistItem) => {
+  // Kiểm tra đăng nhập
+  if (!authStore.isAuthenticated) {
+    toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng');
+    router.push({ name: 'Login', query: { redirect: '/wishlist' } });
+    return;
+  }
+  
+  const result = await cartStore.addToCart({
+    productVariantId: item.variant.id,
+    quantity: 1,
+    price: item.variant.price,
+  });
+  
+  if (result.success) {
+    toast.success(`Đã thêm "${item.product.name}" vào giỏ hàng!`);
+  } else {
+    toast.error(result.message);
+  }
 };
 
-const addAllToCart = () => {
-  alert(`Đã thêm ${wishlistItems.value.length} sản phẩm vào giỏ hàng!`);
+const addAllToCart = async () => {
+  if (!authStore.isAuthenticated) {
+    toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng');
+    router.push({ name: 'Login', query: { redirect: '/wishlist' } });
+    return;
+  }
+  
+  let successCount = 0;
+  for (const item of wishlistItems.value) {
+    const result = await cartStore.addToCart({
+      productVariantId: item.variant.id,
+      quantity: 1,
+      price: item.variant.price,
+    });
+    if (result.success) successCount++;
+  }
+  
+  if (successCount > 0) {
+    toast.success(`Đã thêm ${successCount} sản phẩm vào giỏ hàng!`);
+  } else {
+    toast.error('Không thể thêm sản phẩm vào giỏ hàng');
+  }
 };
 </script>
 

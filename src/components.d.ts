@@ -17,5 +17,6 @@ declare module 'vue' {
     ProductCard: typeof import('./components/ProductCard.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ToastContainer: typeof import('./components/ToastContainer.vue')['default']
   }
 }

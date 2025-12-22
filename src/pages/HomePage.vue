@@ -1,13 +1,24 @@
 <template>
   <div class="home-page">
-    <!-- Hero Section -->
-    <section class="hero-section py-16 position-relative overflow-hidden">
-      <div class="hero-bg" />
-      <div class="hero-particles" />
+    <!-- Hero Section with Video Banner -->
+    <section class="hero-section position-relative overflow-hidden">
+      <!-- Video Background -->
+      <div class="hero-video-wrapper">
+        <video
+          ref="heroVideo"
+          :src="studioVideoUrl"
+          autoplay
+          loop
+          muted
+          playsinline
+          class="hero-video-bg"
+        />
+        <div class="hero-video-overlay" />
+      </div>
       
-      <v-container class="position-relative" style="z-index: 2;">
+      <v-container class="position-relative py-16" style="z-index: 2;">
         <v-row align="center">
-          <v-col cols="12" lg="6" class="pr-lg-12">
+          <v-col cols="12" lg="7" class="pr-lg-12">
             <v-chip
               prepend-icon="mdi-sparkles"
               color="primary"
@@ -18,12 +29,12 @@
               Drop mới mỗi thứ 6 — Song song Nhật Bản
             </v-chip>
 
-            <h1 class="text-h3 text-md-h2 font-weight-bold mb-6">
+            <h1 class="text-h2 text-md-h1 font-weight-bold mb-6 hero-title">
               Chắp cánh cho
               <span class="gradient-text d-block">giấc mơ wibu của bạn</span>
             </h1>
 
-            <p class="text-body-1 text-medium-emphasis mb-8" style="max-width: 500px; line-height: 1.8;">
+            <p class="text-h6 text-medium-emphasis mb-8 hero-subtitle" style="max-width: 600px; line-height: 1.8;">
               Săn figures, nendoroids và plushies giới hạn với bảo chứng chính hãng,
               vận chuyển quốc tế siêu tốc.
             </p>
@@ -32,14 +43,20 @@
               <v-btn
                 :to="{ name: 'ProductList' }"
                 color="primary"
-                size="large"
+                size="x-large"
                 rounded="pill"
-                class="neon-btn-primary"
+                class="neon-btn-primary px-8"
                 append-icon="mdi-chevron-right"
               >
                 Mua sắm ngay
               </v-btn>
-              <v-btn variant="outlined" size="large" rounded="pill" class="neon-btn-outline">
+              <v-btn 
+                variant="outlined" 
+                size="x-large" 
+                rounded="pill" 
+                class="neon-btn-outline px-8"
+              >
+                <v-icon start>mdi-play-circle</v-icon>
                 Xem figure hot
               </v-btn>
             </div>
@@ -48,152 +65,140 @@
             <v-row dense>
               <v-col v-for="stat in stats" :key="stat.label" cols="4">
                 <v-card variant="flat" class="stat-card text-center py-4 rounded-xl">
-                  <div class="text-h5 font-weight-bold neon-text-primary">{{ stat.value }}</div>
-                  <div class="text-caption text-medium-emphasis">{{ stat.label }}</div>
+                  <div class="text-h4 font-weight-bold neon-text-primary">{{ stat.value }}</div>
+                  <div class="text-body-2 text-medium-emphasis">{{ stat.label }}</div>
                 </v-card>
               </v-col>
             </v-row>
-          </v-col>
-
-          <v-col cols="12" lg="5">
-            <v-card class="featured-card pa-5 rounded-xl">
-              <div class="d-flex justify-space-between align-center mb-3">
-                <span class="text-overline text-medium-emphasis">Studio Exclusive</span>
-                <v-chip size="x-small" color="success" prepend-icon="mdi-shield-check">Chính hãng</v-chip>
-              </div>
-              <v-img
-                src="https://images.unsplash.com/photo-1618336753974-aae8e04506aa?q=80&w=1000"
-                :aspect-ratio="4/3"
-                cover
-                class="rounded-xl mb-4"
-                max-height="320"
-              >
-                <v-chip size="small" class="ma-3 bg-surface font-weight-bold trending-chip">
-                  <v-icon start size="small">mdi-fire</v-icon>
-                  Trending
-                </v-chip>
-              </v-img>
-              <div class="d-flex justify-space-between align-end">
-                <div>
-                  <div class="text-overline text-medium-emphasis">Featured Item</div>
-                  <h3 class="text-h5 font-weight-bold">Shonen Icons Vol.4</h3>
-                </div>
-                <div class="text-right">
-                  <div class="text-caption text-medium-emphasis">Giá từ</div>
-                  <div class="text-h5 font-weight-bold neon-text-secondary">1.990.000₫</div>
-                </div>
-              </div>
-            </v-card>
           </v-col>
         </v-row>
       </v-container>
     </section>
 
-    <!-- Categories Section -->
+    <!-- Categories Section - Simple & Clean Design -->
     <v-container class="py-16">
-      <div class="text-center mb-12">
+      <div class="text-center mb-10">
         <div class="text-overline text-primary tracking-widest mb-2">KHÁM PHÁ</div>
         <h2 class="text-h4 font-weight-bold">Mua sắm theo vibes</h2>
       </div>
 
-      <v-row>
-        <v-col v-for="cat in categories" :key="cat.name" cols="12" sm="6" lg="3">
-          <v-hover v-slot:default="{ isHovering, props }">
-            <v-card
-              v-bind="props"
-              class="category-card rounded-xl overflow-hidden cursor-pointer position-relative"
-              height="300"
-            >
-              <v-img
-                :src="cat.image"
-                cover
-                class="fill-height transition-transform"
-                :class="{ 'scale-up': isHovering }"
-              />
-              <div class="category-overlay d-flex flex-column justify-space-between pa-6">
-                <div>
-                  <div class="text-caption" style="color: rgba(255,255,255,0.7);">{{ cat.count }} sản phẩm</div>
-                  <h3 class="text-h5 font-weight-bold text-white mt-2">{{ cat.name }}</h3>
-                </div>
-                <v-btn
-                  variant="text"
-                  color="white"
-                  class="px-0 category-link"
-                  append-icon="mdi-chevron-right"
-                  :to="{ name: 'ProductList', query: { category: cat.slug } }"
-                >
-                  Khám phá
-                </v-btn>
+      <!-- Loading State -->
+      <v-row v-if="categoriesStore.isLoading">
+        <v-col v-for="n in 4" :key="n" cols="6" md="3">
+          <v-skeleton-loader type="image, text" height="280" class="rounded-xl" />
+        </v-col>
+      </v-row>
+
+      <!-- Categories Grid - Simple Cards -->
+      <v-row v-else>
+        <v-col v-for="(cat, index) in displayCategories" :key="cat.id" cols="6" md="3">
+          <router-link 
+            :to="{ name: 'ProductList', query: { category: cat.id } }"
+            class="category-card-link"
+          >
+            <div class="simple-category-card">
+              <!-- Image with bottom gradient -->
+              <div class="category-image-wrapper">
+                <img 
+                  :src="getCategoryImage(index)" 
+                  :alt="cat.name"
+                  class="category-img"
+                />
+                <div class="category-gradient-overlay" />
               </div>
-            </v-card>
-          </v-hover>
-        </v-col>
-      </v-row>
-    </v-container>
-
-    <!-- Featured Products Section -->
-    <v-container class="py-16">
-      <div class="d-flex justify-space-between align-end mb-10">
-        <div>
-          <div class="text-overline text-primary mb-1">WEEKLY PICKS</div>
-          <h2 class="text-h4 font-weight-bold">Mẫu đáng đầu tư tuần này</h2>
-        </div>
-        <v-btn variant="text" color="primary" append-icon="mdi-arrow-right">Xem tất cả</v-btn>
-      </div>
-
-      <v-row>
-        <v-col v-for="product in featuredProducts" :key="product.id" cols="12" sm="6" lg="3">
-          <v-card class="product-card rounded-xl pa-3" variant="outlined">
-            <v-img :src="product.image" class="rounded-lg mb-4" cover height="240">
-              <v-btn
-                icon
-                size="small"
-                variant="flat"
-                class="ma-2 wishlist-btn"
-              >
-                <v-icon>mdi-heart-outline</v-icon>
-              </v-btn>
-            </v-img>
-            <div class="text-caption text-primary">{{ product.category }}</div>
-            <h4 class="text-subtitle-1 font-weight-bold text-truncate">{{ product.name }}</h4>
-            <div class="d-flex justify-space-between align-center mt-3">
-              <span class="text-h6 font-weight-bold neon-text-secondary">{{ product.price }}</span>
-              <v-btn icon="mdi-cart-plus" variant="flat" size="small" color="primary" />
+              
+              <!-- Text Content - Positioned at bottom -->
+              <div class="category-content">
+                <span class="category-tag">Bộ sưu tập</span>
+                <h3 class="category-title">{{ cat.name }}</h3>
+                <span class="category-cta">
+                  Khám phá <v-icon size="16">mdi-arrow-right</v-icon>
+                </span>
+              </div>
             </div>
-          </v-card>
+          </router-link>
         </v-col>
       </v-row>
     </v-container>
 
-    <!-- Flash Sale Section -->
-    <section class="flash-sale-section py-16 overflow-hidden">
+    <!-- Discount Coupons Section -->
+    <section class="discount-section py-16 overflow-hidden">
       <v-container>
-        <div class="text-center mb-12">
-          <v-chip color="error" variant="flat" class="mb-4 animate-pulse">
-            <v-icon start>mdi-lightning-bolt</v-icon>
-            FLASH SALE
+        <div class="text-center mb-10">
+          <v-chip color="secondary" variant="flat" class="mb-4">
+            <v-icon start>mdi-ticket-percent</v-icon>
+            MÃ GIẢM GIÁ
           </v-chip>
-          <h2 class="text-h3 font-weight-bold text-white">Ưu đãi giới hạn 72h</h2>
+          <h2 class="text-h3 font-weight-bold text-white">Nhập mã — Tiết kiệm ngay</h2>
+          <p class="text-medium-emphasis mt-2">Sử dụng mã giảm giá khi thanh toán để được giảm trực tiếp</p>
         </div>
         
-        <v-row>
-          <v-col v-for="deal in flashDeals" :key="deal.id" cols="12" md="4">
-            <v-card class="deal-card rounded-xl pa-5">
-              <div class="d-flex justify-space-between mb-4">
-                <span class="d-flex align-center text-caption">
-                  <v-icon icon="mdi-fire" color="error" class="mr-1" />
-                  HOT
-                </span>
-                <v-chip color="error" size="x-small">{{ deal.discount }}</v-chip>
+        <!-- Loading State -->
+        <div v-if="discountsStore.isLoading" class="text-center py-8">
+          <v-progress-circular indeterminate color="secondary" size="48" />
+          <p class="mt-4 text-medium-emphasis">Đang tải mã giảm giá...</p>
+        </div>
+        
+        <!-- Empty State -->
+        <div v-else-if="!discountsStore.hasDiscounts" class="text-center py-8">
+          <v-icon size="64" color="grey">mdi-ticket-outline</v-icon>
+          <p class="mt-4 text-medium-emphasis">Chưa có mã giảm giá nào</p>
+        </div>
+        
+        <!-- Discount Cards -->
+        <v-row v-else>
+          <v-col 
+            v-for="discount in displayDiscounts" 
+            :key="getDiscountId(discount)" 
+            cols="12" 
+            sm="6" 
+            md="4"
+          >
+            <div class="discount-card">
+              <!-- Left: Discount Value -->
+              <div class="discount-value-section">
+                <div class="discount-value">
+                  {{ discountsStore.formatDiscountValue(discount) }}
+                </div>
+                <div class="discount-type">
+                  {{ getDiscountType(discount) === 'percentage' ? 'GIẢM' : 'GIẢM' }}
+                </div>
               </div>
-              <v-img :src="deal.image" class="rounded-lg mb-4" cover height="180" />
-              <h3 class="text-h6 font-weight-bold text-truncate mb-2">{{ deal.name }}</h3>
-              <div class="d-flex align-center ga-2 mb-4">
-                <span class="text-h6 font-weight-bold neon-text-secondary">{{ deal.salePrice }}</span>
-                <span class="text-caption text-decoration-line-through text-medium-emphasis">{{ deal.originalPrice }}</span>
+              
+              <!-- Right: Details -->
+              <div class="discount-details">
+                <div class="discount-code-row">
+                  <span class="discount-code">{{ getDiscountCode(discount) }}</span>
+                  <v-btn
+                    size="small"
+                    :color="discountsStore.copiedCode === getDiscountCode(discount) ? 'success' : 'primary'"
+                    variant="flat"
+                    @click="handleCopyCode(getDiscountCode(discount))"
+                    class="copy-btn"
+                  >
+                    <v-icon size="16" class="mr-1">
+                      {{ discountsStore.copiedCode === getDiscountCode(discount) ? 'mdi-check' : 'mdi-content-copy' }}
+                    </v-icon>
+                    {{ discountsStore.copiedCode === getDiscountCode(discount) ? 'Đã copy' : 'Copy' }}
+                  </v-btn>
+                </div>
+                
+                <div class="discount-condition" v-if="getMinOrderAmount(discount)">
+                  <v-icon size="14" class="mr-1">mdi-cart-outline</v-icon>
+                  Đơn tối thiểu {{ formatPrice(getMinOrderAmount(discount)) }}
+                </div>
+                
+                <div class="discount-expiry" v-if="getEndAt(discount)">
+                  <v-icon size="14" class="mr-1">mdi-clock-outline</v-icon>
+                  Hết hạn: {{ formatDate(getEndAt(discount)) }}
+                </div>
+                
+                <div class="discount-remaining" v-if="getRemainingUses(discount)">
+                  <v-icon size="14" class="mr-1">mdi-fire</v-icon>
+                  Còn {{ getRemainingUses(discount) }} lượt sử dụng
+                </div>
               </div>
-              <v-btn block color="primary" variant="flat" rounded="lg">Mua ngay</v-btn>
-            </v-card>
+            </div>
           </v-col>
         </v-row>
       </v-container>
@@ -231,56 +236,139 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useCategoriesStore } from '@/stores/categories.store';
+import { useDiscountsStore } from '@/stores/discounts.store';
+
+// ========== STORES ==========
+const categoriesStore = useCategoriesStore();
+const discountsStore = useDiscountsStore();
+
+// ========== VIDEO ==========
+const heroVideo = ref<HTMLVideoElement | null>(null);
+
+// URL video từ server ASP.NET
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:44377';
+const studioVideoUrl = `${API_BASE_URL}/wwwroot/uploads/video/video_1.mp4`;
+
+// ========== STATIC DATA ==========
 const stats = [
   { label: 'Collectors', value: '120K+' },
   { label: 'Figures', value: '3.4K+' },
   { label: 'Đánh giá', value: '4.9/5' },
 ];
 
-const categories = [
-  { name: 'Figures', slug: 'figures', count: 1240, image: 'https://images.unsplash.com/photo-1559535332-db9971090d5e?q=80&w=500' },
-  { name: 'Nendoroid', slug: 'nendoroids', count: 850, image: 'https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=500' },
-  { name: 'Plushies', slug: 'plushies', count: 420, image: 'https://images.unsplash.com/photo-1559131397-f94da358f7ca?q=80&w=500' },
-  { name: 'Limited', slug: 'limited', count: 150, image: 'https://images.unsplash.com/photo-1608889175123-8ee362201f81?q=80&w=500' },
+// Ảnh cho categories - lấy từ server
+// Các ảnh được lưu tại: /wwwroot/uploads/categories/
+const categoryImages = [
+  `${API_BASE_URL}/wwwroot/uploads/categories/category_1.jpg`,
+  `${API_BASE_URL}/wwwroot/uploads/categories/category_2.jpg`,
+  `${API_BASE_URL}/wwwroot/uploads/categories/category_3.jpg`,
+  `${API_BASE_URL}/wwwroot/uploads/categories/category_4.jpg`,
 ];
 
-const featuredProducts = [
-  { id: 1, name: 'Gojo Satoru - Limited Ver', category: 'Nendoroid', price: '1.250.000₫', image: 'https://images.unsplash.com/photo-1608889175123-8ee362201f81?q=80&w=400' },
-  { id: 2, name: 'Nezuko Kamado Figure', category: 'Figures', price: '2.450.000₫', image: 'https://images.unsplash.com/photo-1559535332-db9971090d5e?q=80&w=400' },
-  { id: 3, name: 'Rem Crystal Dress', category: 'Figures', price: '3.890.000₫', image: 'https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=400' },
-  { id: 4, name: 'Pikachu Plushie XL', category: 'Plushies', price: '890.000₫', image: 'https://images.unsplash.com/photo-1559131397-f94da358f7ca?q=80&w=400' },
-];
+// ========== COMPUTED ==========
+// Chuyển đổi categories từ store sang format hiển thị
+const displayCategories = computed(() => {
+  return categoriesStore.categories.map((cat: any) => ({
+    id: cat.Id ?? cat.id,
+    name: cat.Name ?? cat.name,
+    slug: cat.Slug ?? cat.slug ?? '',
+  })).slice(0, 4); // Chỉ lấy 4 categories đầu
+});
 
-const flashDeals = [
-  { id: 1, name: 'Saber Alter 1/7 Scale', discount: '-20%', salePrice: '3.450.000₫', originalPrice: '4.200.000₫', image: 'https://images.unsplash.com/photo-1618336753974-aae8e04506aa?q=80&w=400' },
-  { id: 2, name: 'Power Chainsaw Man', discount: '-15%', salePrice: '1.850.000₫', originalPrice: '2.100.000₫', image: 'https://images.unsplash.com/photo-1559535332-db9971090d5e?q=80&w=400' },
-  { id: 3, name: 'Miku 15th Anniversary', discount: '-25%', salePrice: '4.500.000₫', originalPrice: '6.000.000₫', image: 'https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=400' },
-];
+// Lấy ảnh cho category theo index
+const getCategoryImage = (index: number): string => {
+  return categoryImages[index % categoryImages.length];
+};
+
+// ========== DISCOUNTS HELPERS ==========
+const displayDiscounts = computed(() => {
+  return discountsStore.validDiscounts.slice(0, 6); // Hiển thị tối đa 6 mã
+});
+
+const getDiscountId = (discount: any): number => discount.Id ?? discount.id ?? 0;
+const getDiscountCode = (discount: any): string => discount.Code ?? discount.code ?? '';
+const getDiscountType = (discount: any): string => discount.Type ?? discount.type ?? 'fixed';
+const getMinOrderAmount = (discount: any): number | null => discount.MinOrderAmount ?? discount.min_order_amount ?? null;
+const getEndAt = (discount: any): string | null => discount.EndAt ?? discount.end_at ?? null;
+
+const getRemainingUses = (discount: any): number | null => {
+  const maxUses = discount.MaxUses ?? discount.max_uses;
+  const usedCount = discount.UsedCount ?? discount.used_count ?? 0;
+  if (!maxUses) return null;
+  return Math.max(0, maxUses - usedCount);
+};
+
+const formatPrice = (value: number): string => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(value);
+};
+
+const formatDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+};
+
+const handleCopyCode = async (code: string) => {
+  await discountsStore.copyDiscountCode(code);
+};
+
+// ========== LIFECYCLE ==========
+onMounted(async () => {
+  // Fetch categories và discounts từ API
+  await Promise.all([
+    categoriesStore.fetchCategories(),
+    discountsStore.fetchActiveDiscounts(),
+  ]);
+});
 </script>
 
 <style scoped>
-/* Hero Section */
+/* Hero Section with Video Background */
 .hero-section {
-  min-height: 700px;
+  min-height: 100vh;
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
-.hero-bg {
+/* Video Background Wrapper */
+.hero-video-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.hero-video-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-video-overlay {
   position: absolute;
   inset: 0;
   background: 
-    radial-gradient(ellipse at top left, rgba(0, 212, 255, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom right, rgba(255, 0, 255, 0.12) 0%, transparent 50%);
-  z-index: 0;
+    linear-gradient(135deg, rgba(10, 10, 15, 0.9) 0%, rgba(10, 10, 15, 0.7) 50%, rgba(10, 10, 15, 0.85) 100%),
+    radial-gradient(ellipse at top left, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(255, 0, 255, 0.15) 0%, transparent 50%);
 }
 
-.hero-particles {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle at 2px 2px, rgba(0, 212, 255, 0.15) 1px, transparent 0);
-  background-size: 40px 40px;
-  opacity: 0.5;
-  z-index: 1;
+/* Hero Text Styles */
+.hero-title {
+  text-shadow: 2px 2px 20px rgba(0, 0, 0, 0.5);
+}
+
+.hero-subtitle {
+  text-shadow: 1px 1px 10px rgba(0, 0, 0, 0.3);
 }
 
 .gradient-text {
@@ -301,13 +389,8 @@ const flashDeals = [
 }
 
 .stat-card {
-  background: rgba(0, 212, 255, 0.05) !important;
-  border: 1px solid rgba(0, 212, 255, 0.15) !important;
-}
-
-.featured-card {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(0, 212, 255, 0.08) !important;
+  border: 1px solid rgba(0, 212, 255, 0.2) !important;
   backdrop-filter: blur(10px);
 }
 
@@ -343,26 +426,123 @@ const flashDeals = [
   50% { box-shadow: 0 0 25px rgba(0, 212, 255, 0.5); }
 }
 
-/* Categories */
-.category-card {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
+/* ========== SIMPLE CATEGORY CARDS ========== */
+.category-card-link {
+  text-decoration: none;
+  display: block;
 }
 
-.category-card:hover {
+.simple-category-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  height: 280px;
+  background: #0a0a0f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.4s ease;
+}
+
+.simple-category-card:hover {
   border-color: rgba(0, 212, 255, 0.4);
-  box-shadow: 0 0 30px rgba(0, 212, 255, 0.15);
+  transform: translateY(-8px);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(0, 212, 255, 0.1);
 }
 
-.category-overlay {
+.category-image-wrapper {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+}
+
+.category-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.simple-category-card:hover .category-img {
+  transform: scale(1.08);
+}
+
+/* Gradient overlay - only at bottom for text readability */
+.category-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 0.6) 35%,
+    rgba(0, 0, 0, 0.2) 60%,
+    transparent 100%
+  );
+}
+
+/* Text content at bottom */
+.category-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
   z-index: 2;
 }
 
-.category-link:hover {
-  color: #00d4ff !important;
+.category-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #00d4ff;
+  margin-bottom: 6px;
+}
+
+.category-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  line-height: 1.3;
+}
+
+.category-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
+}
+
+.simple-category-card:hover .category-cta {
+  color: #00d4ff;
+}
+
+.simple-category-card:hover .category-cta .v-icon {
+  transform: translateX(4px);
+}
+
+.category-cta .v-icon {
+  transition: transform 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .simple-category-card {
+    height: 200px;
+  }
+  
+  .category-content {
+    padding: 16px;
+  }
+  
+  .category-title {
+    font-size: 1rem;
+  }
 }
 
 .transition-transform {
@@ -431,6 +611,168 @@ const flashDeals = [
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+/* ========== DISCOUNT SECTION ========== */
+.discount-section {
+  background: linear-gradient(135deg, 
+    rgba(255, 0, 255, 0.1) 0%, 
+    rgba(0, 212, 255, 0.08) 50%,
+    rgba(168, 85, 247, 0.1) 100%);
+  position: relative;
+}
+
+.discount-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* Discount Card - Coupon Style */
+.discount-card {
+  display: flex;
+  background: rgba(18, 18, 26, 0.95);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.discount-card::before,
+.discount-card::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: rgba(10, 10, 15, 1);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.discount-card::before {
+  left: -10px;
+}
+
+.discount-card::after {
+  right: -10px;
+}
+
+.discount-card:hover {
+  border-color: rgba(255, 0, 255, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 
+    0 15px 30px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(255, 0, 255, 0.1);
+}
+
+/* Left section - Discount Value */
+.discount-value-section {
+  width: 100px;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  background: linear-gradient(135deg, rgba(255, 0, 255, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+  border-right: 2px dashed rgba(255, 255, 255, 0.15);
+}
+
+.discount-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ff00ff;
+  text-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+  line-height: 1.1;
+}
+
+.discount-type {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+/* Right section - Details */
+.discount-details {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.discount-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.discount-code {
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  letter-spacing: 1px;
+}
+
+.copy-btn {
+  font-size: 12px !important;
+  text-transform: none !important;
+}
+
+.discount-condition,
+.discount-expiry,
+.discount-remaining {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.discount-remaining {
+  color: #ff6b6b;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .discount-card {
+    flex-direction: column;
+  }
+  
+  .discount-value-section {
+    width: 100%;
+    padding: 16px;
+    border-right: none;
+    border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+  }
+  
+  .discount-card::before,
+  .discount-card::after {
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .discount-card::before {
+    top: -10px;
+  }
+  
+  .discount-card::after {
+    bottom: -10px;
+    top: auto;
+  }
 }
 
 /* CTA Section */

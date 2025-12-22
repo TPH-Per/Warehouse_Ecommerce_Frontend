@@ -12,8 +12,25 @@
       </v-btn>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="isLoading" class="text-center py-16">
+      <v-progress-circular indeterminate color="primary" size="64" />
+      <p class="mt-4 text-medium-emphasis">Đang tải giỏ hàng...</p>
+    </div>
+
+    <!-- Not Authenticated State -->
+    <v-card v-else-if="!isAuthenticated" class="empty-cart text-center py-16 rounded-xl" variant="outlined">
+      <v-icon size="100" color="warning" class="mb-4">mdi-account-lock-outline</v-icon>
+      <h2 class="text-h5 font-weight-bold mb-2">Vui lòng đăng nhập</h2>
+      <p class="text-medium-emphasis mb-6">Đăng nhập để xem và quản lý giỏ hàng của bạn</p>
+      <v-btn :to="{ name: 'Login', query: { redirect: '/cart' } }" color="primary" size="large" rounded="xl">
+        <v-icon start>mdi-login</v-icon>
+        Đăng nhập ngay
+      </v-btn>
+    </v-card>
+
     <!-- Empty State -->
-    <v-card v-if="cartItems.length === 0" class="empty-cart text-center py-16 rounded-xl" variant="outlined">
+    <v-card v-else-if="cartItems.length === 0" class="empty-cart text-center py-16 rounded-xl" variant="outlined">
       <v-icon size="100" color="primary" class="mb-4">mdi-shopping-outline</v-icon>
       <h2 class="text-h5 font-weight-bold mb-2">Giỏ hàng của bạn đang trống</h2>
       <p class="text-medium-emphasis mb-6">Thêm một số mô hình anime tuyệt vời để bắt đầu!</p>
@@ -142,20 +159,46 @@
 
           <v-divider class="my-3" />
 
-          <!-- Discount Code -->
-          <div class="d-flex ga-2 mb-3">
-            <v-text-field
-              v-model="discountCode"
-              placeholder="Mã giảm giá"
-              variant="outlined"
-              density="compact"
-              hide-details
-              rounded="lg"
-              class="coupon-input"
-            />
-            <v-btn color="primary" variant="tonal" rounded="lg" size="small" @click="applyDiscount">
-              Áp dụng
-            </v-btn>
+          <!-- Discount Code Section -->
+          <div class="discount-section mb-3">
+            <!-- Applied Discount -->
+            <div v-if="appliedDiscountCode" class="applied-discount d-flex align-center justify-space-between pa-3 rounded-lg mb-2">
+              <div class="d-flex align-center">
+                <v-icon color="success" size="small" class="mr-2">mdi-ticket-percent</v-icon>
+                <div>
+                  <span class="text-body-2 font-weight-bold">{{ appliedDiscountCode }}</span>
+                  <span class="text-caption text-success ml-2">(-{{ formatPrice(discountAmount) }})</span>
+                </div>
+              </div>
+              <v-btn icon size="x-small" variant="text" color="error" @click="removeDiscountCode">
+                <v-icon size="16">mdi-close</v-icon>
+              </v-btn>
+            </div>
+            
+            <!-- Discount Input -->
+            <div v-else class="d-flex ga-2">
+              <v-text-field
+                v-model="discountCodeInput"
+                placeholder="Nhập mã giảm giá"
+                variant="outlined"
+                density="compact"
+                hide-details
+                rounded="lg"
+                class="coupon-input"
+                :disabled="isApplying"
+                @keyup.enter="applyDiscount"
+              />
+              <v-btn 
+                color="primary" 
+                variant="tonal" 
+                rounded="lg" 
+                size="small" 
+                :loading="isApplying"
+                @click="applyDiscount"
+              >
+                Áp dụng
+              </v-btn>
+            </div>
           </div>
 
           <div v-if="discountAmount > 0" class="summary-row mb-2 text-success">
@@ -198,174 +241,161 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- Snackbar Notification -->
+    <v-snackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="3000"
+      location="top"
+    >
+      {{ snackbar.text }}
+      <template v-slot:actions>
+        <v-btn variant="text" @click="snackbar.show = false">
+          Đóng
+        </v-btn>
+      </template>
+    </v-snackbar>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useCartStore } from '@/stores/cart.store';
+import { useAuthStore } from '@/stores/auth.store';
 
 const router = useRouter();
+const cartStore = useCartStore();
+const authStore = useAuthStore();
 
-// Types matching database structure
-interface ProductVariant {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  original_price?: number;
-  image_url: string;
-}
+// ========== LOCAL STATE ==========
+const discountCodeInput = ref('');
+const isApplying = ref(false);
+const snackbar = ref({
+  show: false,
+  text: '',
+  color: 'success',
+});
 
-interface CartItem {
-  id: number;           // carts.id
-  user_id: number;
-  product_variant_id: number;
-  product_id: number;   // for navigation
-  product_name: string;
-  branch_id: number;    // Branch that will fulfill the order
-  quantity: number;
-  price: number;        // carts.price
-  variant: ProductVariant;
-}
+// ========== COMPUTED ==========
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+const cartItems = computed(() => cartStore.items);
+const cartCount = computed(() => cartStore.totalQuantity);
+const subTotal = computed(() => cartStore.subTotal);
+const shippingFee = computed(() => cartStore.shippingFee);
+const discountAmount = computed(() => cartStore.discountAmount);
+const totalAmount = computed(() => cartStore.total);
+const isLoading = computed(() => cartStore.isLoading);
+const appliedDiscountCode = computed(() => cartStore.discountCode);
 
-interface Branch {
-  id: number;
-  name: string;
-  location: string;
-}
-
-// Mock data matching database structure
-const branches = ref<Branch[]>([
-  { id: 1, name: 'Chi nhánh Hà Nội', location: '77 Nguyễn Trãi, Thanh Xuân' },
-  { id: 2, name: 'Chi nhánh Hồ Chí Minh', location: '123 Lê Lợi, Quận 1' },
-]);
-
-const cartItems = ref<CartItem[]>([
-  {
-    id: 1,
-    user_id: 1,
-    product_variant_id: 1,
-    product_id: 1,
-    product_name: 'Gojo Satoru: Shibuya Incident Ver.',
-    branch_id: 1,
-    quantity: 1,
-    price: 4250000,
-    variant: {
-      id: 1,
-      name: 'Standard Edition',
-      sku: 'GSC-GOJO-001',
-      price: 4250000,
-      original_price: 5100000,
-      image_url: 'https://picsum.photos/200/200?random=1',
-    },
-  },
-  {
-    id: 2,
-    user_id: 1,
-    product_variant_id: 2,
-    product_id: 2,
-    product_name: 'Nezuko Kamado - Blood Demon Art',
-    branch_id: 1,
-    quantity: 2,
-    price: 1250000,
-    variant: {
-      id: 2,
-      name: 'Normal Version',
-      sku: 'ANP-NZK-001',
-      price: 1250000,
-      image_url: 'https://picsum.photos/200/200?random=2',
-    },
-  },
-  {
-    id: 3,
-    user_id: 1,
-    product_variant_id: 3,
-    product_id: 3,
-    product_name: 'Hatsune Miku - 15th Anniversary Ver.',
-    branch_id: 2,
-    quantity: 1,
-    price: 5800000,
-    variant: {
-      id: 3,
-      name: 'Premium Edition',
-      sku: 'GSC-MIKU-015',
-      price: 5800000,
-      original_price: 6500000,
-      image_url: 'https://picsum.photos/200/200?random=3',
-    },
-  },
-]);
-
-const discountCode = ref('');
-const discountAmount = ref(0);
-const shippingFee = ref(50000);
-
-// Computed
+// Group items by branch
 const groupedCartItems = computed(() => {
-  return branches.value.map(branch => ({
-    ...branch,
-    items: cartItems.value.filter(item => item.branch_id === branch.id)
-  })).filter(g => g.items.length > 0);
+  return cartStore.groupedByBranch.map(group => ({
+    id: group.branch.id,
+    name: group.branch.name,
+    location: (group.branch as any).location || '',
+    items: group.items.map(item => ({
+      id: item.Id,
+      user_id: item.UserId,
+      product_variant_id: item.ProductVariantId,
+      product_id: item.ProductId,
+      product_name: item.ProductName,
+      branch_id: item.BranchId,
+      quantity: item.Quantity,
+      price: item.Price,
+      variant: {
+        id: item.ProductVariantId,
+        name: item.VariantName || '',
+        sku: item.VariantSku || '',
+        price: item.Price,
+        original_price: item.OriginalPrice,
+        image_url: item.VariantImageUrl || 'https://picsum.photos/200/200?random=' + item.Id,
+      }
+    }))
+  }));
 });
 
-const subTotal = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-});
-
-const cartCount = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + item.quantity, 0);
-});
-
-const totalAmount = computed(() => {
-  return subTotal.value + shippingFee.value - discountAmount.value;
-});
-
-// Methods
+// ========== METHODS ==========
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 };
 
-const updateQuantity = (item: CartItem, delta: number) => {
-  item.quantity = Math.max(1, item.quantity + delta);
+const showSnackbar = (text: string, color: string = 'success') => {
+  snackbar.value = { show: true, text, color };
 };
 
-const removeItem = (item: CartItem) => {
-  const index = cartItems.value.findIndex(i => i.id === item.id);
-  if (index > -1) {
-    cartItems.value.splice(index, 1);
+const updateQuantity = async (item: any, delta: number) => {
+  await cartStore.changeQuantity(item.id, delta);
+};
+
+const removeItem = async (item: any) => {
+  const success = await cartStore.removeItem(item.id);
+  if (success) {
+    showSnackbar('Đã xóa sản phẩm khỏi giỏ hàng');
+  } else {
+    showSnackbar('Không thể xóa sản phẩm', 'error');
   }
 };
 
-const clearCart = () => {
+const clearCart = async () => {
   if (confirm('Bạn có chắc muốn xóa tất cả sản phẩm trong giỏ hàng?')) {
-    cartItems.value = [];
+    const success = await cartStore.clearCart();
+    if (success) {
+      showSnackbar('Đã xóa tất cả sản phẩm');
+    }
   }
 };
 
-const applyDiscount = () => {
-  // Mock discount logic
-  if (discountCode.value.toUpperCase() === 'WIBU10') {
-    discountAmount.value = Math.round(subTotal.value * 0.1);
-    alert('Áp dụng mã giảm giá thành công! Giảm 10%');
-  } else if (discountCode.value) {
-    alert('Mã giảm giá không hợp lệ!');
+const applyDiscount = async () => {
+  if (!discountCodeInput.value.trim()) {
+    showSnackbar('Vui lòng nhập mã giảm giá', 'warning');
+    return;
   }
+  
+  isApplying.value = true;
+  const result = await cartStore.applyDiscountCode(discountCodeInput.value);
+  isApplying.value = false;
+  
+  if (result.success) {
+    showSnackbar(result.message, 'success');
+    discountCodeInput.value = ''; // Clear input after success
+  } else {
+    showSnackbar(result.message, 'error');
+  }
+};
+
+const removeDiscountCode = () => {
+  cartStore.removeDiscountCode();
+  showSnackbar('Đã xóa mã giảm giá');
 };
 
 const proceedToCheckout = () => {
-  // Save order summary to localStorage for checkout page
+  if (!isAuthenticated.value) {
+    showSnackbar('Vui lòng đăng nhập để tiếp tục thanh toán', 'warning');
+    router.push({ name: 'Login', query: { redirect: '/cart' } });
+    return;
+  }
+  
+  if (cartItems.value.length === 0) {
+    showSnackbar('Giỏ hàng đang trống', 'warning');
+    return;
+  }
+  
+  // Lưu thông tin đơn hàng vào localStorage cho checkout page
   const orderSummary = {
     items: cartItems.value.map(item => ({
-      productId: item.product_id,
-      variantId: item.product_variant_id,
-      name: `${item.product_name} - ${item.variant.name}`,
-      image: item.variant.image_url,
-      quantity: item.quantity,
-      price: item.price,
+      cartItemId: item.Id,
+      productId: item.ProductId,
+      variantId: item.ProductVariantId,
+      name: `${item.ProductName} - ${item.VariantName}`,
+      image: item.VariantImageUrl,
+      quantity: item.Quantity,
+      price: item.Price,
     })),
     subTotal: subTotal.value,
     shippingFee: shippingFee.value,
+    discountCode: appliedDiscountCode.value,
     discountAmount: discountAmount.value,
     total: totalAmount.value,
     branches: groupedCartItems.value.map(g => ({ id: g.id, name: g.name })),
@@ -373,6 +403,20 @@ const proceedToCheckout = () => {
   localStorage.setItem('checkout_order', JSON.stringify(orderSummary));
   router.push({ name: 'Checkout', query: { id: Date.now() } });
 };
+
+// ========== LIFECYCLE ==========
+onMounted(async () => {
+  // Fetch cart từ server
+  await cartStore.fetchCart();
+});
+
+// Watch auth state
+watch(() => authStore.isAuthenticated, (isAuth) => {
+  if (!isAuth) {
+    // Redirect to login if not authenticated
+    // Or just clear cart locally
+  }
+});
 </script>
 
 <style scoped>
@@ -457,5 +501,14 @@ const proceedToCheckout = () => {
 .sticky-top {
   position: sticky;
   top: 90px;
+}
+
+.applied-discount {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.discount-section {
+  margin-top: 4px;
 }
 </style>

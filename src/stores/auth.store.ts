@@ -1,12 +1,13 @@
 // ==========================================
-// Auth Store - Lưu thông tin user đơn giản
+// Auth Store - Quản lý authentication với cookie-based auth
 // File: src/stores/auth.store.ts
 // ==========================================
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import apiClient from '@/api';
 
-// Interface đơn giản cho user - khớp với API response
+// Interface cho user - normalize từ API response
 export interface AuthUser {
     id: number;
     name: string;
@@ -17,20 +18,30 @@ export interface AuthUser {
     role_name?: string;
 }
 
+// Normalize user data từ API (support cả PascalCase và camelCase)
+const normalizeUser = (data: any): AuthUser | null => {
+    if (!data) return null;
+
+    return {
+        id: data.Id ?? data.id,
+        name: data.Name ?? data.name ?? '',
+        full_name: data.FullName ?? data.full_name ?? data.Name ?? data.name ?? '',
+        email: data.Email ?? data.email ?? '',
+        phone_number: data.PhoneNumber ?? data.phone_number ?? null,
+        role_id: data.RoleId ?? data.role_id,
+        role_name: data.RoleName ?? data.role_name ?? 'user',
+    };
+};
+
 export const useAuthStore = defineStore('auth', () => {
     // ========== STATE ==========
-    // Lưu thông tin user đang đăng nhập
     const user = ref<AuthUser | null>(null);
     const isLoading = ref(false);
 
     // ========== GETTERS ==========
-    // Kiểm tra đã đăng nhập chưa
     const isAuthenticated = computed(() => user.value !== null);
-
-    // Lấy tên hiển thị
     const displayName = computed(() => user.value?.full_name || user.value?.name || 'Guest');
 
-    // Lấy chữ cái đầu để hiển thị avatar
     const initials = computed(() => {
         if (!user.value?.full_name) return 'G';
         return user.value.full_name
@@ -50,7 +61,8 @@ export const useAuthStore = defineStore('auth', () => {
         const savedUser = localStorage.getItem('user');
         if (savedUser) {
             try {
-                user.value = JSON.parse(savedUser);
+                const parsed = JSON.parse(savedUser);
+                user.value = normalizeUser(parsed);
             } catch {
                 localStorage.removeItem('user');
             }
@@ -59,21 +71,31 @@ export const useAuthStore = defineStore('auth', () => {
 
     /**
      * Đăng nhập - Lưu user sau khi API trả về thành công
-     * @param userData - Thông tin user từ API response
+     * @param userData - Thông tin user từ API response (PascalCase hoặc camelCase)
      */
-    const login = (userData: AuthUser) => {
-        user.value = userData;
-        // Lưu vào localStorage để maintain session khi refresh
-        localStorage.setItem('user', JSON.stringify(userData));
+    const login = (userData: any) => {
+        const normalized = normalizeUser(userData);
+        if (normalized) {
+            user.value = normalized;
+            localStorage.setItem('user', JSON.stringify(normalized));
+        }
     };
 
     /**
-     * Đăng xuất - Xóa thông tin user
+     * Đăng xuất - Xóa thông tin user và gọi API logout
      */
-    const logout = () => {
+    const logout = async () => {
+        try {
+            // Gọi API logout để xóa cookie phía server
+            await apiClient.post('/auth/logout');
+        } catch (error) {
+            // Ignore error - vẫn xóa local state
+            console.log('Logout API error (ignored):', error);
+        }
+
+        // Xóa local state
         user.value = null;
         localStorage.removeItem('user');
-        // Có thể gọi API logout ở backend nếu cần
     };
 
     /**
@@ -84,6 +106,21 @@ export const useAuthStore = defineStore('auth', () => {
             user.value = { ...user.value, ...userData };
             localStorage.setItem('user', JSON.stringify(user.value));
         }
+    };
+
+    /**
+     * Set user trực tiếp (dùng sau khi login API success)
+     */
+    const setUser = (userData: any) => {
+        login(userData);
+    };
+
+    /**
+     * Clear user (không gọi API)
+     */
+    const clearUser = () => {
+        user.value = null;
+        localStorage.removeItem('user');
     };
 
     return {
@@ -99,34 +136,8 @@ export const useAuthStore = defineStore('auth', () => {
         login,
         logout,
         updateUser,
+        setUser,
+        clearUser,
     };
 });
 
-// ==========================================
-// CÁCH SỬ DỤNG
-// ==========================================
-/*
-  // Trong component hoặc file khác:
-  import { useAuthStore } from '@/stores/auth.store';
-  
-  const authStore = useAuthStore();
-  
-  // Kiểm tra đăng nhập
-  if (authStore.isAuthenticated) {
-    console.log('Đã đăng nhập:', authStore.user?.name);
-  }
-  
-  // Sau khi gọi API login thành công:
-  const response = await apiClient.post('/auth/login', { email, password });
-  if (response.data.success) {
-    authStore.login(response.data.user);
-  }
-  
-  // Đăng xuất:
-  authStore.logout();
-  
-  // Trong App.vue - khởi tạo khi app load:
-  onMounted(() => {
-    authStore.initialize();
-  });
-*/

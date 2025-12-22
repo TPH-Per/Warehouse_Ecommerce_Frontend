@@ -90,6 +90,10 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useToast } from '@/composables/useToast';
+import { useCartStore } from '@/stores/cart.store';
+import { useAuthStore } from '@/stores/auth.store';
 
 interface Product {
   id: number | string;
@@ -103,6 +107,7 @@ interface Product {
   isNew?: boolean;
   isPreOrder?: boolean;
   discount?: number;
+  variantId?: number; // ID của variant mặc định
 }
 
 const props = defineProps<{
@@ -111,7 +116,13 @@ const props = defineProps<{
 
 const emit = defineEmits(['add-to-cart', 'toggle-wishlist']);
 
+const router = useRouter();
+const toast = useToast();
+const cartStore = useCartStore();
+const authStore = useAuthStore();
+
 const isInWishlist = ref(false);
+const isAddingToCart = ref(false);
 
 const formatPrice = (price: number) => {
   return price.toLocaleString() + '₫';
@@ -120,11 +131,46 @@ const formatPrice = (price: number) => {
 const toggleWishlist = () => {
   isInWishlist.value = !isInWishlist.value;
   emit('toggle-wishlist', props.product);
+  
+  if (isInWishlist.value) {
+    toast.success(`Đã thêm "${props.product.name}" vào yêu thích!`);
+  } else {
+    toast.info(`Đã xóa "${props.product.name}" khỏi yêu thích`);
+  }
 };
 
-const addToCart = () => {
+const addToCart = async () => {
+  // Kiểm tra đăng nhập
+  if (!authStore.isAuthenticated) {
+    toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng');
+    router.push({ name: 'Login', query: { redirect: `/product?id=${props.product.id}` } });
+    return;
+  }
+  
+  // Nếu không có variantId, chuyển đến trang chi tiết để chọn
+  if (!props.product.variantId) {
+    toast.info('Vui lòng chọn phiên bản sản phẩm');
+    router.push(`/product?id=${props.product.id}`);
+    return;
+  }
+  
+  isAddingToCart.value = true;
+  
+  const result = await cartStore.addToCart({
+    productVariantId: props.product.variantId,
+    quantity: 1,
+    price: props.product.price,
+  });
+  
+  isAddingToCart.value = false;
+  
+  if (result.success) {
+    toast.success(`Đã thêm "${props.product.name}" vào giỏ hàng!`);
+  } else {
+    toast.error(result.message);
+  }
+  
   emit('add-to-cart', props.product);
-  alert(`Đã thêm "${props.product.name}" vào giỏ hàng!`);
 };
 </script>
 

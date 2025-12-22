@@ -399,6 +399,9 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProductsStore } from '@/stores/products.store';
 import { useBranchesStore } from '@/stores/branches.store';
+import { useCartStore } from '@/stores/cart.store';
+import { useAuthStore } from '@/stores/auth.store';
+import { useToast } from '@/composables/useToast';
 import type { ProductDetail } from '@/types';
 
 // ========== ROUTER ==========
@@ -408,6 +411,11 @@ const router = useRouter();
 // ========== STORES ==========
 const productsStore = useProductsStore();
 const branchesStore = useBranchesStore();
+const cartStore = useCartStore();
+const authStore = useAuthStore();
+
+// ========== TOAST ==========
+const toast = useToast();
 
 // ========== LOADING & ERROR ==========
 const isLoading = computed(() => productsStore.isLoading);
@@ -639,10 +647,37 @@ const selectVariant = (variantId: number) => {
   selectedVariantId.value = variantId;
 };
 
-const addToCart = () => {
-  if (!selectedVariant.value || !selectedBranch.value) return;
-  alert(`Đã thêm ${quantity.value}x "${selectedVariant.value.name}" từ ${selectedBranch.value.name} vào giỏ hàng!`);
-  // TODO: Implement cart store
+const addToCart = async () => {
+  if (!selectedVariant.value || !selectedBranch.value) {
+    toast.warning('Vui lòng chọn phiên bản và chi nhánh');
+    return;
+  }
+  
+  if (maxStock.value === 0) {
+    toast.error('Sản phẩm đã hết hàng tại chi nhánh này');
+    return;
+  }
+  
+  // Kiểm tra đăng nhập
+  if (!authStore.isAuthenticated) {
+    toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng');
+    router.push({ name: 'Login', query: { redirect: route.fullPath } });
+    return;
+  }
+  
+  // Gọi cart store để thêm sản phẩm
+  const result = await cartStore.addToCart({
+    productVariantId: selectedVariant.value.id,
+    quantity: quantity.value,
+    price: selectedVariant.value.price,
+    branchId: selectedBranch.value.id,
+  });
+  
+  if (result.success) {
+    toast.success(`Đã thêm ${quantity.value}x "${selectedVariant.value.name}" vào giỏ hàng!`);
+  } else {
+    toast.error(result.message);
+  }
 };
 
 const toggleWishlist = () => {
