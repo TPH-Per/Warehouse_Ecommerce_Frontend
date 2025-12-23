@@ -21,12 +21,12 @@
             <v-card class="stats-card pa-4 rounded-xl" variant="flat">
               <div class="d-flex justify-space-around text-center">
                 <div>
-                  <div class="text-h4 font-weight-bold neon-text-primary">{{ wishlistItems.length }}</div>
+                  <div class="text-h4 font-weight-bold neon-text-primary">{{ wishlistStore.itemCount }}</div>
                   <div class="text-caption text-medium-emphasis">Sản phẩm</div>
                 </div>
                 <v-divider vertical />
                 <div>
-                  <div class="text-h4 font-weight-bold neon-text-secondary">{{ formatPrice(totalValue) }}</div>
+                  <div class="text-h4 font-weight-bold neon-text-secondary">{{ formatPrice(wishlistStore.totalValue) }}</div>
                   <div class="text-caption text-medium-emphasis">Tổng giá trị</div>
                 </div>
               </div>
@@ -38,8 +38,32 @@
     </section>
 
     <v-container class="py-8">
+      <!-- Login Required State -->
+      <v-card v-if="!isAuthenticated" class="empty-state rounded-2xl overflow-hidden" variant="flat">
+        <div class="empty-content text-center py-16 px-6">
+          <div class="empty-icon-wrapper mb-6">
+            <v-icon size="80" class="empty-icon">mdi-account-lock-outline</v-icon>
+          </div>
+          <h2 class="text-h5 font-weight-bold mb-3">Vui lòng đăng nhập</h2>
+          <p class="text-body-1 text-medium-emphasis mb-8" style="max-width: 400px; margin: 0 auto;">
+            Đăng nhập để xem và quản lý danh sách yêu thích của bạn
+          </p>
+          <v-btn 
+            :to="{ name: 'Login', query: { redirect: '/wishlist' } }" 
+            color="secondary" 
+            size="large" 
+            rounded="xl"
+            class="explore-btn px-8"
+          >
+            <v-icon start>mdi-login</v-icon>
+            Đăng nhập ngay
+          </v-btn>
+        </div>
+        <div class="empty-decoration" />
+      </v-card>
+
       <!-- Empty State -->
-      <v-card v-if="wishlistItems.length === 0" class="empty-state rounded-2xl overflow-hidden" variant="flat">
+      <v-card v-else-if="wishlistStore.isEmpty" class="empty-state rounded-2xl overflow-hidden" variant="flat">
         <div class="empty-content text-center py-16 px-6">
           <div class="empty-icon-wrapper mb-6">
             <v-icon size="80" class="empty-icon">mdi-heart-broken-outline</v-icon>
@@ -70,7 +94,7 @@
             <div class="d-flex align-center ga-2">
               <v-chip color="primary" variant="tonal">
                 <v-icon start size="small">mdi-heart</v-icon>
-                {{ wishlistItems.length }} sản phẩm
+                {{ wishlistStore.itemCount }} sản phẩm
               </v-chip>
               <v-btn variant="text" size="small" color="primary" @click="sortBy = sortBy === 'newest' ? 'price' : 'newest'">
                 <v-icon start size="small">mdi-sort</v-icon>
@@ -85,7 +109,7 @@
               <v-btn variant="outlined" size="small" rounded="lg" prepend-icon="mdi-share-variant-outline">
                 Chia sẻ
               </v-btn>
-              <v-btn variant="outlined" color="error" size="small" rounded="lg" prepend-icon="mdi-delete-sweep" @click="clearWishlist">
+              <v-btn variant="outlined" color="error" size="small" rounded="lg" prepend-icon="mdi-delete-sweep" @click="handleClearWishlist">
                 Xóa hết
               </v-btn>
             </div>
@@ -102,10 +126,15 @@
             >
               <!-- Image Section -->
               <div class="card-image-wrapper">
-                <v-img :src="item.variant.image_url" cover height="200" class="card-image">
+                <v-img :src="getImageUrl(item.variant.image_url)" cover height="200" class="card-image">
                   <template v-slot:placeholder>
                     <div class="d-flex align-center justify-center fill-height">
                       <v-progress-circular indeterminate color="primary" size="32" />
+                    </div>
+                  </template>
+                  <template v-slot:error>
+                    <div class="d-flex align-center justify-center fill-height bg-grey-darken-3">
+                      <v-icon size="48" color="grey">mdi-image-broken</v-icon>
                     </div>
                   </template>
                 </v-img>
@@ -116,7 +145,7 @@
                     icon
                     size="small"
                     class="remove-btn"
-                    @click.stop="removeFromWishlist(item)"
+                    @click.stop="handleRemoveItem(item)"
                   >
                     <v-icon>mdi-close</v-icon>
                   </v-btn>
@@ -127,7 +156,7 @@
                       block
                       rounded="lg"
                       class="cart-btn font-weight-bold"
-                      @click="addToCart(item)"
+                      @click="handleAddToCart(item)"
                     >
                       <v-icon start>mdi-cart-plus</v-icon>
                       Thêm giỏ hàng
@@ -161,7 +190,7 @@
               <v-card-text class="card-content pa-4">
                 <div class="d-flex align-center justify-space-between mb-2">
                   <v-chip size="x-small" color="primary" variant="tonal">
-                    {{ item.product.category.name }}
+                    {{ item.product.category?.name || 'Figures' }}
                   </v-chip>
                   <div class="d-flex align-center">
                     <v-icon size="x-small" color="warning" class="mr-1">mdi-star</v-icon>
@@ -173,7 +202,7 @@
                   {{ item.product.name }}
                 </h3>
                 <p class="text-caption text-medium-emphasis mb-3">
-                  {{ item.variant.name }} • {{ item.product.supplier.name }}
+                  {{ item.variant.name }} • {{ item.product.supplier?.name || 'Unknown' }}
                 </p>
 
                 <div class="d-flex align-center justify-space-between">
@@ -191,7 +220,7 @@
                     color="secondary"
                     variant="tonal"
                     class="quick-cart-btn"
-                    @click="addToCart(item)"
+                    @click="handleAddToCart(item)"
                   >
                     <v-icon>mdi-cart-plus</v-icon>
                   </v-btn>
@@ -213,7 +242,13 @@
             <div class="d-flex flex-column flex-sm-row">
               <!-- Image -->
               <div class="list-image-wrapper">
-                <v-img :src="item.variant.image_url" cover height="180" width="180" class="list-image" />
+                <v-img :src="getImageUrl(item.variant.image_url)" cover height="180" width="180" class="list-image">
+                  <template v-slot:error>
+                    <div class="d-flex align-center justify-center fill-height bg-grey-darken-3">
+                      <v-icon size="48" color="grey">mdi-image-broken</v-icon>
+                    </div>
+                  </template>
+                </v-img>
                 <div class="list-badges">
                   <v-chip v-if="item.product.status === 'pre-order'" size="x-small" color="info">Pre-Order</v-chip>
                 </div>
@@ -224,15 +259,15 @@
                 <div class="d-flex justify-space-between align-start mb-2">
                   <div>
                     <div class="d-flex align-center ga-2 mb-2">
-                      <v-chip size="x-small" color="primary" variant="tonal">{{ item.product.category.name }}</v-chip>
-                      <v-chip size="x-small" variant="outlined">{{ item.product.supplier.name }}</v-chip>
+                      <v-chip size="x-small" color="primary" variant="tonal">{{ item.product.category?.name || 'Figures' }}</v-chip>
+                      <v-chip size="x-small" variant="outlined">{{ item.product.supplier?.name || 'Unknown' }}</v-chip>
                     </div>
                     <h3 class="text-h6 font-weight-bold mb-1">{{ item.product.name }}</h3>
                     <p class="text-body-2 text-medium-emphasis">
                       Phiên bản: {{ item.variant.name }} • SKU: {{ item.variant.sku }}
                     </p>
                   </div>
-                  <v-btn icon="mdi-close" variant="text" size="small" color="error" @click="removeFromWishlist(item)" />
+                  <v-btn icon="mdi-close" variant="text" size="small" color="error" @click="handleRemoveItem(item)" />
                 </div>
 
                 <v-spacer />
@@ -251,7 +286,7 @@
                     <v-btn :to="`/product?id=${item.product.id}`" variant="outlined" rounded="lg">
                       Chi tiết
                     </v-btn>
-                    <v-btn color="secondary" rounded="lg" prepend-icon="mdi-cart-plus" class="cart-action-btn" @click="addToCart(item)">
+                    <v-btn color="secondary" rounded="lg" prepend-icon="mdi-cart-plus" class="cart-action-btn" @click="handleAddToCart(item)">
                       Thêm giỏ
                     </v-btn>
                   </div>
@@ -267,7 +302,7 @@
             <div>
               <h3 class="text-h6 font-weight-bold mb-1">Thêm tất cả vào giỏ hàng?</h3>
               <p class="text-body-2 text-medium-emphasis mb-0">
-                {{ wishlistItems.length }} sản phẩm • Tổng {{ formatPrice(totalValue) }}
+                {{ wishlistStore.itemCount }} sản phẩm • Tổng {{ formatPrice(wishlistStore.totalValue) }}
               </p>
             </div>
             <v-btn
@@ -276,7 +311,8 @@
               rounded="xl"
               class="add-all-btn px-8 font-weight-bold"
               prepend-icon="mdi-cart-arrow-down"
-              @click="addAllToCart"
+              :loading="isAddingAll"
+              @click="handleAddAllToCart"
             >
               Thêm tất cả
             </v-btn>
@@ -284,158 +320,82 @@
         </v-card>
       </template>
     </v-container>
+
+    <!-- Snackbar Notification -->
+    <v-snackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="3000"
+      location="top"
+    >
+      {{ snackbar.text }}
+      <template v-slot:actions>
+        <v-btn variant="text" @click="snackbar.show = false">
+          Đóng
+        </v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useWishlistStore, type WishlistItem } from '@/stores/wishlist.store';
 import { useCartStore } from '@/stores/cart.store';
 import { useAuthStore } from '@/stores/auth.store';
-import { useToast } from '@/composables/useToast';
 
 const router = useRouter();
+const wishlistStore = useWishlistStore();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
-const toast = useToast();
-
-// Types
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
-
-interface Supplier {
-  id: number;
-  name: string;
-}
-
-interface ProductVariant {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  original_price?: number;
-  image_url: string;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  status: 'active' | 'pre-order';
-  category: Category;
-  supplier: Supplier;
-}
-
-interface WishlistItem {
-  id: number;
-  product: Product;
-  variant: ProductVariant;
-  added_at: string;
-}
 
 // State
 const viewMode = ref<'grid' | 'list'>('grid');
 const sortBy = ref<'newest' | 'price'>('newest');
-
-// Mock Data
-const wishlistItems = ref<WishlistItem[]>([
-  {
-    id: 1,
-    product: {
-      id: 1,
-      name: 'Rem: Crystal Dress Ver. 1/7 Scale',
-      slug: 'rem-crystal-dress',
-      status: 'pre-order',
-      category: { id: 1, name: 'Figures', slug: 'figures' },
-      supplier: { id: 1, name: 'eStream' },
-    },
-    variant: {
-      id: 1,
-      name: 'Standard Edition',
-      sku: 'ES-REM-001',
-      price: 35000000,
-      original_price: 42000000,
-      image_url: 'https://picsum.photos/400/500?random=1',
-    },
-    added_at: '2024-12-19',
-  },
-  {
-    id: 2,
-    product: {
-      id: 2,
-      name: 'Nendoroid Power',
-      slug: 'nendoroid-power',
-      status: 'active',
-      category: { id: 2, name: 'Nendoroids', slug: 'nendoroids' },
-      supplier: { id: 2, name: 'Good Smile Company' },
-    },
-    variant: {
-      id: 2,
-      name: 'Normal Version',
-      sku: 'GSC-PWR-001',
-      price: 1550000,
-      image_url: 'https://picsum.photos/400/500?random=2',
-    },
-    added_at: '2024-12-18',
-  },
-  {
-    id: 3,
-    product: {
-      id: 3,
-      name: 'Miku Nakano Wedding Dress',
-      slug: 'miku-nakano',
-      status: 'active',
-      category: { id: 1, name: 'Figures', slug: 'figures' },
-      supplier: { id: 3, name: 'Kotobukiya' },
-    },
-    variant: {
-      id: 3,
-      name: 'Deluxe Ver.',
-      sku: 'KOTO-MK-001',
-      price: 4500000,
-      original_price: 5000000,
-      image_url: 'https://picsum.photos/400/500?random=3',
-    },
-    added_at: '2024-12-17',
-  },
-  {
-    id: 4,
-    product: {
-      id: 4,
-      name: 'Figma Denji Chainsaw Man',
-      slug: 'figma-denji',
-      status: 'pre-order',
-      category: { id: 4, name: 'Figma', slug: 'figma' },
-      supplier: { id: 4, name: 'Max Factory' },
-    },
-    variant: {
-      id: 4,
-      name: 'DX Edition',
-      sku: 'MF-DNJ-001',
-      price: 2800000,
-      image_url: 'https://picsum.photos/400/500?random=4',
-    },
-    added_at: '2024-12-16',
-  },
-]);
+const isAddingAll = ref(false);
+const snackbar = ref({
+  show: false,
+  text: '',
+  color: 'success',
+});
 
 // Computed
-const totalValue = computed(() => wishlistItems.value.reduce((sum, item) => sum + item.variant.price, 0));
+const isAuthenticated = computed(() => authStore.isAuthenticated);
 
 const sortedItems = computed(() => {
-  const items = [...wishlistItems.value];
+  const items = [...wishlistStore.items];
   if (sortBy.value === 'price') {
     return items.sort((a, b) => a.variant.price - b.variant.price);
   }
   return items.sort((a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime());
 });
 
+// API Base URL for images
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || '';
+
 // Methods
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+};
+
+/**
+ * Xử lý URL hình ảnh - thêm base URL nếu cần
+ */
+const getImageUrl = (imageUrl: string | undefined): string => {
+  if (!imageUrl) {
+    return 'https://picsum.photos/400/500?random=' + Math.random();
+  }
+  // Nếu đã là URL đầy đủ
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  // Nếu là đường dẫn tương đối, thêm base URL
+  return `${apiBaseUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+};
+
+const showSnackbar = (text: string, color: string = 'success') => {
+  snackbar.value = { show: true, text, color };
 };
 
 const hasDiscount = (item: WishlistItem) => {
@@ -447,26 +407,25 @@ const getDiscountPercent = (item: WishlistItem) => {
   return Math.round((1 - item.variant.price / item.variant.original_price) * 100);
 };
 
-const removeFromWishlist = (item: WishlistItem) => {
-  const index = wishlistItems.value.findIndex(i => i.id === item.id);
-  if (index > -1) {
-    wishlistItems.value.splice(index, 1);
-    toast.success(`Đã xóa "${item.product.name}" khỏi yêu thích`);
+const handleRemoveItem = (item: WishlistItem) => {
+  const result = wishlistStore.removeById(item.id);
+  if (result.success) {
+    showSnackbar(result.message);
+  } else {
+    showSnackbar(result.message, 'error');
   }
 };
 
-const clearWishlist = () => {
-  if (confirm('Bạn có chắc muốn xóa tất cả?')) {
-    const count = wishlistItems.value.length;
-    wishlistItems.value = [];
-    toast.success(`Đã xóa ${count} sản phẩm khỏi yêu thích`);
+const handleClearWishlist = () => {
+  if (confirm('Bạn có chắc muốn xóa tất cả sản phẩm khỏi danh sách yêu thích?')) {
+    const result = wishlistStore.clearWishlist();
+    showSnackbar(result.message);
   }
 };
 
-const addToCart = async (item: WishlistItem) => {
-  // Kiểm tra đăng nhập
-  if (!authStore.isAuthenticated) {
-    toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng');
+const handleAddToCart = async (item: WishlistItem) => {
+  if (!isAuthenticated.value) {
+    showSnackbar('Vui lòng đăng nhập để thêm vào giỏ hàng', 'warning');
     router.push({ name: 'Login', query: { redirect: '/wishlist' } });
     return;
   }
@@ -478,21 +437,23 @@ const addToCart = async (item: WishlistItem) => {
   });
   
   if (result.success) {
-    toast.success(`Đã thêm "${item.product.name}" vào giỏ hàng!`);
+    showSnackbar(`Đã thêm "${item.product.name}" vào giỏ hàng!`);
   } else {
-    toast.error(result.message);
+    showSnackbar(result.message, 'error');
   }
 };
 
-const addAllToCart = async () => {
-  if (!authStore.isAuthenticated) {
-    toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng');
+const handleAddAllToCart = async () => {
+  if (!isAuthenticated.value) {
+    showSnackbar('Vui lòng đăng nhập để thêm vào giỏ hàng', 'warning');
     router.push({ name: 'Login', query: { redirect: '/wishlist' } });
     return;
   }
   
+  isAddingAll.value = true;
   let successCount = 0;
-  for (const item of wishlistItems.value) {
+  
+  for (const item of wishlistStore.items) {
     const result = await cartStore.addToCart({
       productVariantId: item.variant.id,
       quantity: 1,
@@ -501,12 +462,20 @@ const addAllToCart = async () => {
     if (result.success) successCount++;
   }
   
+  isAddingAll.value = false;
+  
   if (successCount > 0) {
-    toast.success(`Đã thêm ${successCount} sản phẩm vào giỏ hàng!`);
+    showSnackbar(`Đã thêm ${successCount} sản phẩm vào giỏ hàng!`);
   } else {
-    toast.error('Không thể thêm sản phẩm vào giỏ hàng');
+    showSnackbar('Không thể thêm sản phẩm vào giỏ hàng', 'error');
   }
 };
+
+// Lifecycle
+onMounted(() => {
+  // Khởi tạo wishlist store
+  wishlistStore.initialize();
+});
 </script>
 
 <style scoped>

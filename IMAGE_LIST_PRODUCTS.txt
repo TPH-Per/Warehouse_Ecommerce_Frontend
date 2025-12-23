@@ -1,0 +1,103 @@
+# 📸 DANH SÁCH ẢNH SẢN PHẨM - WIBU SHOP
+# Đặt tất cả ảnh vào: wwwroot/uploads/products/
+# Kích thước khuyến nghị: 800x800 hoặc 600x600 pixels, định dạng JPG
+
+================================================================
+🎯 SCALE FIGURE (11 ảnh)
+================================================================
+
+1.  gojo-satoru-standard.jpg     = Gojo Satoru - Standard Edition
+2.  gojo-satoru-deluxe.jpg       = Gojo Satoru - Deluxe (LED Base)
+3.  gojo-satoru-limited.jpg      = Gojo Satoru - Limited (Hollow Purple)
+4.  marin-school.jpg             = Marin Kitagawa - School Uniform
+5.  marin-cosplay.jpg            = Marin Kitagawa - Cosplay Shizuku-tan
+6.  zerotwo-pilot.jpg            = Zero Two - Pilot Suit
+7.  zerotwo-dress.jpg            = Zero Two - White Dress
+8.  rem-wedding-crystal.jpg      = Rem - Crystal Wedding Dress
+9.  rem-wedding-premium.jpg      = Rem - Premium Box Set
+10. yor-thorn.jpg                = Yor Forger - Thorn Princess
+11. yor-dress.jpg                = Yor Forger - Elegant Dress
+
+================================================================
+🎪 NENDOROID (8 ảnh)
+================================================================
+
+12. nendo-denji.jpg              = Nendoroid Denji - Standard
+13. nendo-denji-csm.jpg          = Nendoroid Denji - Chainsaw Head
+14. nendo-frieren.jpg            = Nendoroid Frieren - Standard
+15. nendo-frieren-magic.jpg      = Nendoroid Frieren - Magic Casting
+16. nendo-anya-smug.jpg          = Nendoroid Anya - Smug Face
+17. nendo-anya-school.jpg        = Nendoroid Anya - School Uniform
+18. nendo-makima.jpg             = Nendoroid Makima - Control Devil
+19. nendo-power.jpg              = Nendoroid Power - Blood Fiend
+
+================================================================
+🎭 FIGMA (7 ảnh)
+================================================================
+
+20. figma-shinobu.jpg            = Figma Shinobu Kocho
+21. figma-levi.jpg               = Figma Levi - Final Season
+22. figma-levi-clean.jpg         = Figma Levi - Cleaning Ver
+23. figma-tanjiro.jpg            = Figma Tanjiro - Water Breathing
+24. figma-nezuko.jpg             = Figma Nezuko - Demon Form
+25. figma-nezuko-box.jpg         = Figma Nezuko - Sleeping Box
+26. figma-mikasa.jpg             = Figma Mikasa - ODM Gear
+
+================================================================
+🎨 POP UP PARADE (6 ảnh)
+================================================================
+
+27. popup-fern.jpg               = Pop Up Parade Fern
+28. popup-himmel.jpg             = Pop Up Parade Himmel
+29. popup-bocchi.jpg             = Pop Up Parade Bocchi - Guitar
+30. popup-bocchi-box.jpg         = Pop Up Parade Bocchi - Cardboard Box
+31. popup-chisato.jpg            = Pop Up Parade Chisato - DA Uniform
+32. popup-takina.jpg             = Pop Up Parade Takina - DA Uniform
+
+================================================================
+📂 TỔNG CỘNG: 32 ẢNH
+================================================================
+
+Thư mục đích: wwwroot/uploads/products/
+
+Cách đổi tên nhanh:
+1. Tải ảnh từ Google/Pinterest với từ khóa sản phẩm
+2. Đổi tên theo danh sách trên
+3. Copy vào thư mục wwwroot/uploads/products/
+
+Lưu ý:
+- Tên file PHẢI ĐÚNG y chang (viết thường, có dấu gạch ngang)
+- Định dạng: .jpg (không phải .jpeg, .png)
+- Nếu muốn dùng PNG, cần update lại database
+
+================================================================
+🔗 GỢI Ý TỪ KHÓA TÌM KIẾM ẢNH
+================================================================
+
+Scale Figure:
+- "Gojo Satoru figure 1/7 goodsmile"
+- "Marin Kitagawa figure my dress up darling"
+- "Zero Two figure darling in the franxx"
+- "Rem figure wedding re:zero"
+- "Yor Forger figure thorn princess"
+
+Nendoroid:
+- "Nendoroid Denji chainsaw man"
+- "Nendoroid Frieren sousou no frieren"
+- "Nendoroid Anya spy family smug"
+- "Nendoroid Makima chainsaw man"
+- "Nendoroid Power chainsaw man"
+
+Figma:
+- "Figma Shinobu Kocho demon slayer"
+- "Figma Levi final season AOT"
+- "Figma Tanjiro demon slayer"
+- "Figma Nezuko demon slayer"
+- "Figma Mikasa attack on titan"
+
+Pop Up Parade:
+- "Pop Up Parade Fern frieren"
+- "Pop Up Parade Himmel frieren"
+- "Pop Up Parade Bocchi bocchi the rock"
+- "Pop Up Parade Chisato lycoris recoil"
+- "Pop Up Parade Takina lycoris recoil"

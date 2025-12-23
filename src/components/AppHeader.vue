@@ -3,7 +3,7 @@
     <!-- Logo -->
     <v-btn to="/" variant="text" class="pa-0 h-auto" :ripple="false">
       <div class="logo-container d-flex align-center justify-center px-4 py-2 rounded-xl">
-        <span class="text-h5 font-weight-bold neon-text-primary">Wibu</span>
+        <span class="text-h5 font-weight-bold neon-text-primary">PerW</span>
         <span class="text-h5 font-weight-black neon-text-secondary ml-1">Shop</span>
       </div>
     </v-btn>
@@ -298,11 +298,13 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.store';
 import { useCategoriesStore } from '@/stores/categories.store';
 import { useCartStore } from '@/stores/cart.store';
+import { useWishlistStore } from '@/stores/wishlist.store';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const categoriesStore = useCategoriesStore();
 const cartStore = useCartStore();
+const wishlistStore = useWishlistStore();
 
 // Computed từ auth store
 const isAuthenticated = computed(() => authStore.isAuthenticated);
@@ -327,8 +329,10 @@ const displayName = computed(() => {
 // Cart count từ store
 const cartCount = computed(() => cartStore.totalQuantity);
 
-// Mock data cho wishlist/notifications (sẽ config sau)
-const wishlistCount = ref(0);
+// Wishlist count từ store
+const wishlistCount = computed(() => wishlistStore.itemCount);
+
+// Notifications count (mock)
 const userUnreadCount = ref(0);
 
 const searchQuery = ref('');
@@ -416,10 +420,13 @@ onMounted(async () => {
   // 1. Initialize auth store trước (load từ localStorage)
   authStore.initialize();
   
-  // 2. Fetch categories (không cần auth)
+  // 2. Initialize wishlist store (load từ localStorage)
+  wishlistStore.initialize();
+  
+  // 3. Fetch categories (không cần auth)
   await categoriesStore.fetchCategories();
   
-  // 3. Chỉ fetch cart nếu đã đăng nhập
+  // 4. Chỉ fetch cart nếu đã đăng nhập
   if (authStore.isAuthenticated) {
     await cartStore.fetchCart();
   }

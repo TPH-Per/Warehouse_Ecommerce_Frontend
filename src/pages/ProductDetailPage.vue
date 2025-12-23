@@ -401,6 +401,7 @@ import { useProductsStore } from '@/stores/products.store';
 import { useBranchesStore } from '@/stores/branches.store';
 import { useCartStore } from '@/stores/cart.store';
 import { useAuthStore } from '@/stores/auth.store';
+import { useWishlistStore } from '@/stores/wishlist.store';
 import { useToast } from '@/composables/useToast';
 import type { ProductDetail } from '@/types';
 
@@ -413,6 +414,7 @@ const productsStore = useProductsStore();
 const branchesStore = useBranchesStore();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const wishlistStore = useWishlistStore();
 
 // ========== TOAST ==========
 const toast = useToast();
@@ -461,7 +463,6 @@ const getImageUrl = (imagePath: string | null | undefined): string => {
 // ========== LOCAL STATE ==========
 const selectedImageIndex = ref(0);
 const quantity = ref(1);
-const isInWishlist = ref(false);
 const selectedBranchId = ref<number>(1);
 const selectedVariantId = ref<number | null>(null);
 
@@ -574,6 +575,12 @@ const formattedDescription = computed(() => {
     .replace(/\n/g, '<br>');
 });
 
+// Kiểm tra sản phẩm có trong wishlist không
+const isInWishlist = computed(() => {
+  if (!selectedVariant.value) return false;
+  return wishlistStore.isInWishlist(selectedVariant.value.id);
+});
+
 // ========== WATCHERS ==========
 
 // Watch variant change to update image và fetch stock
@@ -681,8 +688,48 @@ const addToCart = async () => {
 };
 
 const toggleWishlist = () => {
-  isInWishlist.value = !isInWishlist.value;
-  // TODO: Implement wishlist store
+  if (!product.value || !selectedVariant.value) {
+    toast.warning('Vui lòng chọn phiên bản sản phẩm');
+    return;
+  }
+  
+  // Kiểm tra đăng nhập
+  if (!authStore.isAuthenticated) {
+    toast.warning('Vui lòng đăng nhập để sử dụng danh sách yêu thích');
+    router.push({ name: 'Login', query: { redirect: route.fullPath } });
+    return;
+  }
+  
+  // Tạo product và variant objects cho wishlist
+  const wishlistProduct = {
+    id: product.value.id,
+    name: product.value.name,
+    slug: product.value.slug,
+    status: product.value.status as 'active' | 'pre-order' | 'inactive',
+    category: product.value.category,
+    supplier: product.value.supplier,
+  };
+  
+  const wishlistVariant = {
+    id: selectedVariant.value.id,
+    name: selectedVariant.value.name,
+    sku: selectedVariant.value.sku,
+    price: selectedVariant.value.price,
+    original_price: selectedVariant.value.original_price,
+    image_url: selectedVariant.value.image_url,
+  };
+  
+  const result = wishlistStore.toggleWishlist(wishlistProduct, wishlistVariant);
+  
+  if (result.success) {
+    if (result.added) {
+      toast.success(result.message);
+    } else {
+      toast.info(result.message);
+    }
+  } else {
+    toast.error(result.message);
+  }
 };
 
 // ========== LIFECYCLE ==========

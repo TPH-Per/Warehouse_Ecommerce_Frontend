@@ -75,13 +75,25 @@
                 <v-list-item class="cart-item py-3 px-4">
                   <div class="d-flex align-center ga-3">
                     <!-- Product Image -->
-                    <v-img 
-                      :src="item.variant.image_url" 
-                      cover 
-                      class="rounded-lg flex-shrink-0" 
-                      width="70" 
-                      height="70" 
-                    />
+                    <div class="cart-item-image flex-shrink-0">
+                      <v-img 
+                        :src="getImageUrl(item.variant.image_url)" 
+                        :aspect-ratio="1"
+                        cover 
+                        class="rounded-lg"
+                      >
+                        <template v-slot:placeholder>
+                          <div class="d-flex align-center justify-center fill-height bg-grey-darken-4">
+                            <v-progress-circular indeterminate color="primary" size="20" />
+                          </div>
+                        </template>
+                        <template v-slot:error>
+                          <div class="d-flex align-center justify-center fill-height bg-grey-darken-3 rounded-lg">
+                            <v-icon size="24" color="grey">mdi-image-broken</v-icon>
+                          </div>
+                        </template>
+                      </v-img>
+                    </div>
 
                     <!-- Product Info -->
                     <div class="flex-grow-1 overflow-hidden">
@@ -208,6 +220,46 @@
 
           <v-divider class="my-3" />
 
+          <!-- Payment Method Selection -->
+          <div class="payment-method-section mb-4">
+            <h3 class="text-subtitle-2 font-weight-bold mb-3">
+              <v-icon start size="small" color="primary">mdi-credit-card-outline</v-icon>
+              Phương thức thanh toán
+            </h3>
+            
+            <v-radio-group v-model="selectedPaymentMethod" class="payment-radio-group" hide-details>
+              <v-radio value="COD" class="payment-option mb-2">
+                <template v-slot:label>
+                  <div class="d-flex align-center ga-3 py-2">
+                    <v-avatar size="36" color="success" variant="tonal">
+                      <v-icon size="18">mdi-truck-delivery</v-icon>
+                    </v-avatar>
+                    <div>
+                      <div class="font-weight-medium">Thanh toán khi nhận hàng (COD)</div>
+                      <div class="text-caption text-medium-emphasis">Thanh toán bằng tiền mặt khi nhận hàng</div>
+                    </div>
+                  </div>
+                </template>
+              </v-radio>
+              
+              <v-radio value="BANK_TRANSFER" class="payment-option">
+                <template v-slot:label>
+                  <div class="d-flex align-center ga-3 py-2">
+                    <v-avatar size="36" color="info" variant="tonal">
+                      <v-icon size="18">mdi-bank-transfer</v-icon>
+                    </v-avatar>
+                    <div>
+                      <div class="font-weight-medium">Chuyển khoản ngân hàng</div>
+                      <div class="text-caption text-medium-emphasis">Thanh toán trước qua QR Code</div>
+                    </div>
+                  </div>
+                </template>
+              </v-radio>
+            </v-radio-group>
+          </div>
+
+          <v-divider class="my-3" />
+
           <!-- Total -->
           <div class="summary-row total-row pa-3 rounded-lg mb-4">
             <span class="text-subtitle-1 font-weight-bold">Tổng cộng</span>
@@ -272,6 +324,7 @@ const authStore = useAuthStore();
 // ========== LOCAL STATE ==========
 const discountCodeInput = ref('');
 const isApplying = ref(false);
+const selectedPaymentMethod = ref('COD'); // COD hoặc BANK_TRANSFER
 const snackbar = ref({
   show: false,
   text: '',
@@ -310,13 +363,31 @@ const groupedCartItems = computed(() => {
         sku: item.VariantSku || '',
         price: item.Price,
         original_price: item.OriginalPrice,
-        image_url: item.VariantImageUrl || 'https://picsum.photos/200/200?random=' + item.Id,
+        image_url: item.VariantImageUrl || '',
       }
     }))
   }));
 });
 
+// API Base URL for images
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || '';
+
 // ========== METHODS ==========
+/**
+ * Xử lý URL hình ảnh - thêm base URL nếu cần
+ */
+const getImageUrl = (imageUrl: string | undefined): string => {
+  if (!imageUrl) {
+    return 'https://picsum.photos/200/200?random=' + Math.random();
+  }
+  // Nếu đã là URL đầy đủ
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  // Nếu là đường dẫn tương đối, thêm base URL
+  return `${apiBaseUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+};
+
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 };
@@ -370,7 +441,7 @@ const removeDiscountCode = () => {
   showSnackbar('Đã xóa mã giảm giá');
 };
 
-const proceedToCheckout = () => {
+const proceedToCheckout = async () => {
   if (!isAuthenticated.value) {
     showSnackbar('Vui lòng đăng nhập để tiếp tục thanh toán', 'warning');
     router.push({ name: 'Login', query: { redirect: '/cart' } });
@@ -382,26 +453,77 @@ const proceedToCheckout = () => {
     return;
   }
   
-  // Lưu thông tin đơn hàng vào localStorage cho checkout page
-  const orderSummary = {
-    items: cartItems.value.map(item => ({
-      cartItemId: item.Id,
-      productId: item.ProductId,
-      variantId: item.ProductVariantId,
-      name: `${item.ProductName} - ${item.VariantName}`,
-      image: item.VariantImageUrl,
-      quantity: item.Quantity,
-      price: item.Price,
-    })),
-    subTotal: subTotal.value,
-    shippingFee: shippingFee.value,
-    discountCode: appliedDiscountCode.value,
-    discountAmount: discountAmount.value,
-    total: totalAmount.value,
-    branches: groupedCartItems.value.map(g => ({ id: g.id, name: g.name })),
-  };
-  localStorage.setItem('checkout_order', JSON.stringify(orderSummary));
-  router.push({ name: 'Checkout', query: { id: Date.now() } });
+  // Lấy thông tin giao hàng từ user profile
+  const user = authStore.user;
+  const shippingName = user?.fullName || user?.full_name || user?.name || 'Khách hàng';
+  const shippingPhone = user?.phoneNumber || user?.phone_number || '';
+  const shippingAddress = 'Địa chỉ mặc định'; // TODO: Cho phép user chọn địa chỉ
+  
+  try {
+    showSnackbar('Đang xử lý đơn hàng...', 'info');
+    
+    // Gọi API tạo đơn hàng thực sự trong database
+    const { ordersApi } = await import('@/api/orders.api');
+    const response = await ordersApi.createOrder({
+      ShippingRecipientName: shippingName,
+      ShippingRecipientPhone: shippingPhone,
+      ShippingAddress: shippingAddress,
+      PaymentMethodId: selectedPaymentMethod.value === 'COD' ? 1 : 2,
+      DiscountCode: appliedDiscountCode.value || undefined,
+    });
+    
+    const result = response.data;
+    const isSuccess = result.Success ?? result.success;
+    const orderData = result.Data ?? result.data;
+    const message = result.Message ?? result.message;
+    
+    if (isSuccess && orderData) {
+      // Lưu thông tin đơn hàng để hiển thị trên trang Checkout
+      const orderSummary = {
+        orderId: orderData.Id ?? orderData.id,
+        orderCode: orderData.OrderCode ?? orderData.order_code,
+        items: cartItems.value.map(item => ({
+          cartItemId: item.Id,
+          productId: item.ProductId,
+          variantId: item.ProductVariantId,
+          name: `${item.ProductName} - ${item.VariantName}`,
+          image: item.VariantImageUrl,
+          quantity: item.Quantity,
+          price: item.Price,
+        })),
+        subTotal: subTotal.value,
+        shippingFee: shippingFee.value,
+        discountCode: appliedDiscountCode.value,
+        discountAmount: discountAmount.value,
+        total: totalAmount.value,
+        branches: groupedCartItems.value.map(g => ({ id: g.id, name: g.name })),
+        createdAt: new Date().toISOString(),
+        // Thông tin thanh toán
+        paymentMethod: selectedPaymentMethod.value,
+        paymentMethodName: selectedPaymentMethod.value === 'COD' 
+          ? 'Thanh toán khi nhận hàng (COD)' 
+          : 'Chuyển khoản ngân hàng',
+        // Thông tin khách hàng
+        customer: {
+          name: shippingName,
+          phone: shippingPhone,
+          address: shippingAddress,
+        },
+      };
+      localStorage.setItem('checkout_order', JSON.stringify(orderSummary));
+      
+      showSnackbar(message || 'Đặt hàng thành công!', 'success');
+      
+      // Redirect to checkout page
+      router.push({ name: 'Checkout', query: { id: orderData.Id ?? orderData.id } });
+    } else {
+      showSnackbar(message || 'Không thể tạo đơn hàng', 'error');
+    }
+  } catch (error: any) {
+    console.error('Checkout error:', error);
+    const errorMessage = error.response?.data?.Message || error.response?.data?.message || 'Có lỗi xảy ra khi đặt hàng';
+    showSnackbar(errorMessage, 'error');
+  }
 };
 
 // ========== LIFECYCLE ==========
@@ -446,6 +568,14 @@ watch(() => authStore.isAuthenticated, (isAuth) => {
 
 .cart-item:hover {
   background: rgba(255, 255, 255, 0.02);
+}
+
+.cart-item-image {
+  width: 70px;
+  min-width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .product-link {
@@ -510,5 +640,39 @@ watch(() => authStore.isAuthenticated, (isAuth) => {
 
 .discount-section {
   margin-top: 4px;
+}
+
+/* Payment Method Styles */
+.payment-method-section {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.payment-radio-group {
+  margin: 0;
+}
+
+.payment-option {
+  margin: 0 !important;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.payment-option:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.payment-option :deep(.v-selection-control) {
+  min-height: auto !important;
+}
+
+.payment-option :deep(.v-label) {
+  width: 100%;
 }
 </style>

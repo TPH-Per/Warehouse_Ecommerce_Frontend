@@ -25,7 +25,8 @@
               class="search-field"
               hide-details
               clearable
-              @keyup.enter="fetchProducts"
+              @keyup.enter="applyFilters"
+              @click:clear="clearSearch"
             />
           </v-col>
         </v-row>
@@ -101,6 +102,7 @@
             </v-select>
           </v-col>
 
+          <!-- Bộ lọc Danh mục -->
           <v-col cols="6" sm="4" md="2">
             <v-select
               v-model="filters.category_id"
@@ -113,9 +115,11 @@
               density="compact"
               hide-details
               clearable
+              prepend-inner-icon="mdi-shape-outline"
             />
           </v-col>
 
+          <!-- Bộ lọc Nhà cung cấp -->
           <v-col cols="6" sm="4" md="2">
             <v-select
               v-model="filters.supplier_id"
@@ -128,10 +132,27 @@
               density="compact"
               hide-details
               clearable
+              prepend-inner-icon="mdi-domain"
             />
           </v-col>
 
+          <!-- Bộ lọc Giá -->
           <v-col cols="6" sm="4" md="2">
+            <v-select
+              v-model="filters.price_range"
+              :items="priceRanges"
+              label="Khoảng giá"
+              variant="outlined"
+              rounded="lg"
+              density="compact"
+              hide-details
+              clearable
+              prepend-inner-icon="mdi-currency-usd"
+            />
+          </v-col>
+
+          <!-- Sort và View Mode -->
+          <v-col cols="12" sm="8" md="2" class="d-flex align-center ga-2">
             <v-select
               v-model="sortBy"
               :items="sortOptions"
@@ -140,10 +161,8 @@
               rounded="lg"
               density="compact"
               hide-details
+              class="flex-grow-1"
             />
-          </v-col>
-
-          <v-col cols="12" sm="4" md="2" class="d-flex justify-end ga-2">
             <v-btn-toggle v-model="viewMode" mandatory rounded="lg" color="primary" variant="outlined" density="compact">
               <v-btn value="grid" icon="mdi-view-grid" size="small" />
               <v-btn value="list" icon="mdi-view-list" size="small" />
@@ -157,28 +176,38 @@
     <v-container class="py-4">
       <!-- Loading State -->
       <v-row v-if="loading">
-        <v-col v-for="n in 8" :key="n" cols="6" sm="4" lg="3">
+        <v-col v-for="n in itemsPerPage" :key="n" cols="6" sm="4" md="3">
           <v-skeleton-loader type="image, article" class="rounded-xl" />
         </v-col>
       </v-row>
 
       <!-- Empty State -->
-      <v-card v-else-if="products.length === 0" class="empty-state text-center py-12 rounded-xl" variant="outlined">
+      <v-card v-else-if="paginatedProducts.length === 0" class="empty-state text-center py-12 rounded-xl" variant="outlined">
         <v-icon size="64" color="primary" class="mb-4">mdi-package-variant</v-icon>
         <h3 class="text-h6 font-weight-bold">Không tìm thấy sản phẩm</h3>
         <p class="text-medium-emphasis mb-4">Hãy thử điều chỉnh từ khóa hoặc bộ lọc của bạn.</p>
         <v-btn color="primary" rounded="lg" size="small" @click="clearFilters">Xóa bộ lọc</v-btn>
       </v-card>
 
-      <!-- Grid View -->
+      <!-- Grid View (4 cột x 2 hàng = 8 sản phẩm/trang) -->
       <v-row v-else-if="viewMode === 'grid'">
-        <v-col v-for="product in products" :key="product.Id" cols="6" sm="4" lg="3">
-          <v-card class="product-card rounded-xl" variant="outlined">
+        <v-col v-for="product in paginatedProducts" :key="product.Id" cols="6" md="3">
+          <v-card class="product-card rounded-xl h-100 d-flex flex-column" variant="outlined">
             <div class="image-container position-relative overflow-hidden">
-              <v-img :src="getProductImage(product)" class="product-img" cover height="180">
+              <v-img 
+                :src="getProductImage(product)" 
+                class="product-img" 
+                :aspect-ratio="1"
+                cover
+              >
                 <template v-slot:placeholder>
                   <v-row class="fill-height ma-0" align="center" justify="center">
                     <v-progress-circular indeterminate color="primary" size="24" />
+                  </v-row>
+                </template>
+                <template v-slot:error>
+                  <v-row class="fill-height ma-0 bg-grey-darken-3" align="center" justify="center">
+                    <v-icon size="48" color="grey">mdi-image-broken</v-icon>
                   </v-row>
                 </template>
               </v-img>
@@ -192,10 +221,10 @@
                 </v-btn>
               </div>
             </div>
-            <v-card-text class="pa-3">
+            <v-card-text class="pa-3 d-flex flex-column flex-grow-1">
               <div class="text-caption text-primary">{{ product.CategoryName || 'Chưa phân loại' }}</div>
-              <div class="text-body-2 font-weight-bold text-truncate product-title">{{ product.Name }}</div>
-              <div class="text-caption text-medium-emphasis text-truncate">{{ product.Description || '' }}</div>
+              <div class="text-body-2 font-weight-bold text-truncate-2 product-title mb-1">{{ product.Name }}</div>
+              <div class="text-caption text-medium-emphasis text-truncate mb-auto">{{ product.SupplierName || '' }}</div>
               <div class="d-flex justify-space-between align-center mt-2">
                 <span class="text-subtitle-2 font-weight-bold neon-text-secondary">
                   {{ formatPrice(getLowestPrice(product)) }}
@@ -209,20 +238,26 @@
 
       <!-- List View -->
       <v-row v-else>
-        <v-col v-for="product in products" :key="product.Id" cols="12">
-          <v-card class="product-card-list rounded-xl overflow-hidden d-flex" variant="outlined">
+        <v-col v-for="product in paginatedProducts" :key="product.Id" cols="12">
+          <v-card class="product-card-list rounded-xl overflow-hidden d-flex flex-column flex-sm-row" variant="outlined">
             <v-img
               :src="getProductImage(product)"
+              :aspect-ratio="1"
               cover
-              width="160"
-              height="140"
-              class="flex-shrink-0"
-            />
+              class="product-list-image flex-shrink-0"
+            >
+              <template v-slot:error>
+                <v-row class="fill-height ma-0 bg-grey-darken-3" align="center" justify="center">
+                  <v-icon size="48" color="grey">mdi-image-broken</v-icon>
+                </v-row>
+              </template>
+            </v-img>
             <v-card-text class="pa-4 d-flex flex-column flex-grow-1">
               <div class="d-flex justify-space-between align-start mb-2">
                 <div>
                   <v-chip size="x-small" color="primary" variant="tonal" class="mb-1">{{ product.CategoryName || 'Chưa phân loại' }}</v-chip>
                   <h3 class="text-subtitle-1 font-weight-bold">{{ product.Name }}</h3>
+                  <div class="text-caption text-medium-emphasis">{{ product.SupplierName || '' }}</div>
                 </div>
               </div>
               <p class="text-caption text-medium-emphasis line-clamp-2 mb-auto">{{ product.Description || '' }}</p>
@@ -246,14 +281,21 @@
       </v-row>
 
       <!-- Pagination -->
-      <div v-if="products.length > 0" class="d-flex justify-center mt-8">
+      <div v-if="filteredProducts.length > 0" class="d-flex justify-center mt-8">
         <v-pagination
           v-model="currentPage"
           :length="totalPages"
           rounded="circle"
           color="primary"
           size="small"
+          :total-visible="5"
         />
+      </div>
+
+      <!-- Showing info -->
+      <div v-if="filteredProducts.length > 0" class="text-center mt-2 text-caption text-medium-emphasis">
+        Hiển thị {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredProducts.length) }} 
+        trong tổng số {{ filteredProducts.length }} sản phẩm
       </div>
     </v-container>
   </div>
@@ -261,17 +303,25 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useProductsStore } from '@/stores/products.store';
 import { useCategoriesStore } from '@/stores/categories.store';
 import { useSuppliersStore } from '@/stores/suppliers.store';
 import { useBranchesStore } from '@/stores/branches.store';
 import type { Product } from '@/types';
 
+// ========== ROUTER ==========
+const route = useRoute();
+const router = useRouter();
+
 // ========== PINIA STORES ==========
 const productsStore = useProductsStore();
 const categoriesStore = useCategoriesStore();
 const suppliersStore = useSuppliersStore();
 const branchesStore = useBranchesStore();
+
+// ========== CONSTANTS ==========
+const itemsPerPage = 8; // 4 cột x 2 hàng
 
 // ========== LOCAL STATE ==========
 const viewMode = ref<'grid' | 'list'>('grid');
@@ -285,15 +335,30 @@ const selectedBranchId = ref<number | null>(null);
 const filters = ref({
   category_id: null as number | null,
   supplier_id: null as number | null,
-  status: null as string | null,
+  price_range: null as string | null,
 });
+
+// ========== STATIC OPTIONS ==========
+const sortOptions = [
+  { title: 'Mới nhất', value: 'newest' },
+  { title: 'Tên A-Z', value: 'name_asc' },
+  { title: 'Tên Z-A', value: 'name_desc' },
+  { title: 'Giá thấp đến cao', value: 'price_asc' },
+  { title: 'Giá cao đến thấp', value: 'price_desc' },
+];
+
+const priceRanges = [
+  { title: 'Dưới 500K', value: '0-500000' },
+  { title: '500K - 1 triệu', value: '500000-1000000' },
+  { title: '1 - 2 triệu', value: '1000000-2000000' },
+  { title: '2 - 5 triệu', value: '2000000-5000000' },
+  { title: 'Trên 5 triệu', value: '5000000-999999999' },
+];
 
 // ========== COMPUTED ==========
 // Lấy products từ store
-const products = computed(() => productsStore.products);
+const allProducts = computed(() => productsStore.products);
 const loading = computed(() => productsStore.isLoading);
-const totalProducts = computed(() => productsStore.total);
-const totalPages = computed(() => Math.ceil(productsStore.total / 12) || 1);
 
 // Lấy options từ stores - Dynamic data từ API
 const categories = computed(() => categoriesStore.categoryOptions);
@@ -308,16 +373,85 @@ const branches = computed(() => {
   }));
 });
 
-// ========== STATIC OPTIONS ==========
-const sortOptions = [
-  { title: 'Mới nhất', value: 'newest' },
-  { title: 'Tên A-Z', value: 'name_asc' },
-  { title: 'Giá thấp đến cao', value: 'price_asc' },
-  { title: 'Giá cao đến thấp', value: 'price_desc' },
-];
+// ========== FILTERED & SORTED PRODUCTS ==========
+const filteredProducts = computed(() => {
+  let result = [...allProducts.value];
+
+  // Lọc theo từ khóa tìm kiếm
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim();
+    result = result.filter(p => 
+      (p.Name?.toLowerCase().includes(query)) ||
+      (p.Description?.toLowerCase().includes(query)) ||
+      ((p as any).CategoryName?.toLowerCase().includes(query)) ||
+      ((p as any).SupplierName?.toLowerCase().includes(query))
+    );
+  }
+
+  // Lọc theo danh mục
+  if (filters.value.category_id) {
+    result = result.filter(p => 
+      p.CategoryId === filters.value.category_id ||
+      (p as any).category_id === filters.value.category_id
+    );
+  }
+
+  // Lọc theo nhà cung cấp
+  if (filters.value.supplier_id) {
+    result = result.filter(p => 
+      (p as any).SupplierId === filters.value.supplier_id ||
+      (p as any).supplier_id === filters.value.supplier_id
+    );
+  }
+
+  // Lọc theo khoảng giá
+  if (filters.value.price_range) {
+    const parts = filters.value.price_range.split('-').map(Number);
+    const minPrice = parts[0] || 0;
+    const maxPrice = parts[1] || 999999999;
+    result = result.filter(p => {
+      const price = getLowestPrice(p);
+      return price >= minPrice && price <= maxPrice;
+    });
+  }
+
+  // Sắp xếp
+  switch (sortBy.value) {
+    case 'name_asc':
+      result.sort((a, b) => (a.Name || '').localeCompare(b.Name || ''));
+      break;
+    case 'name_desc':
+      result.sort((a, b) => (b.Name || '').localeCompare(a.Name || ''));
+      break;
+    case 'price_asc':
+      result.sort((a, b) => getLowestPrice(a) - getLowestPrice(b));
+      break;
+    case 'price_desc':
+      result.sort((a, b) => getLowestPrice(b) - getLowestPrice(a));
+      break;
+    case 'newest':
+    default:
+      // Giữ nguyên thứ tự từ server (mới nhất)
+      break;
+  }
+
+  return result;
+});
+
+// Tổng số sản phẩm sau khi lọc
+const totalProducts = computed(() => filteredProducts.value.length);
+
+// Số trang
+const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage) || 1);
+
+// Sản phẩm theo trang hiện tại
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredProducts.value.slice(start, end);
+});
 
 // ========== PLACEHOLDER IMAGE ==========
-// SVG placeholder cho sản phẩm không có ảnh
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,' + btoa(`
   <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
     <rect fill="#1a1a2e" width="400" height="400"/>
@@ -337,34 +471,24 @@ const formatPrice = (price: number) => {
 };
 
 // ========== IMAGE HELPER ==========
-// Base URL của API server để load ảnh
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://localhost:44377';
 
-// Lấy hình ảnh sản phẩm - với placeholder nếu không có ảnh
 const getProductImage = (product: Product) => {
   const imageUrl = (product as any).ImageUrl || (product as any).imageUrl || product.ImageUrl;
   
-  // Kiểm tra có ảnh hay không
   if (!imageUrl || imageUrl === '' || imageUrl === null || imageUrl === 'null') {
     return PLACEHOLDER_IMAGE;
   }
   
-  // Xử lý đường dẫn ảnh từ server ASP.NET
-  // Giữ nguyên path từ database (bao gồm /wwwroot nếu có)
-  let cleanPath = imageUrl;
-  
-  // Nếu đường dẫn bắt đầu bằng http/https thì đã đầy đủ
-  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
-    return cleanPath;
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
   }
   
-  // Nếu là đường dẫn tương đối, thêm base URL
-  if (cleanPath.startsWith('/')) {
-    return `${API_BASE_URL}${cleanPath}`;
+  if (imageUrl.startsWith('/')) {
+    return `${API_BASE_URL}${imageUrl}`;
   }
   
-  // Trường hợp còn lại (chỉ có tên file)
-  return `${API_BASE_URL}/wwwroot/uploads/products/${cleanPath}`;
+  return `${API_BASE_URL}/wwwroot/uploads/products/${imageUrl}`;
 };
 
 // Lấy giá thấp nhất
@@ -373,59 +497,76 @@ const getLowestPrice = (product: Product) => {
   return price || 0;
 };
 
-// Fetch products từ store - CHỈ LẤY SẢN PHẨM CÓ TRONG KHO
-const fetchProducts = async () => {
-  // Cập nhật branch được chọn vào store
-  productsStore.setSelectedBranch(selectedBranchId.value);
-  
-  if (searchQuery.value.trim()) {
-    await productsStore.searchProducts(searchQuery.value);
-  } else if (filters.value.category_id) {
-    await productsStore.fetchByCategory(filters.value.category_id);
-  } else {
-    // Mặc định: Lấy sản phẩm có trong kho
-    await productsStore.fetchProducts();
-  }
+// Apply filters
+const applyFilters = () => {
+  currentPage.value = 1; // Reset về trang 1 khi lọc
 };
 
-// Clear filters
+// Clear search
+const clearSearch = () => {
+  searchQuery.value = '';
+  currentPage.value = 1;
+};
+
+// Clear all filters
 const clearFilters = () => {
   searchQuery.value = '';
-  filters.value = { category_id: null, supplier_id: null, status: null };
+  filters.value = { category_id: null, supplier_id: null, price_range: null };
   sortBy.value = 'newest';
-  fetchProducts();
+  currentPage.value = 1;
+  router.replace({ query: {} });
 };
 
-// Watch for filter changes
-watch(
-  () => filters.value.category_id,
-  (newVal) => {
-    productsStore.setSelectedBranch(selectedBranchId.value);
-    if (newVal) {
-      productsStore.fetchByCategory(newVal);
-    } else {
-      productsStore.fetchProducts();
-    }
-  }
-);
+// Fetch products từ store
+const fetchProducts = async () => {
+  productsStore.setSelectedBranch(selectedBranchId.value);
+  await productsStore.fetchProducts();
+};
 
-// Watch for branch changes - Khi đổi chi nhánh, fetch lại sản phẩm có trong kho của chi nhánh đó
-watch(
-  () => selectedBranchId.value,
-  (newBranchId) => {
-    console.log('🏪 Đổi chi nhánh:', newBranchId ?? 'Tất cả');
-    productsStore.setSelectedBranch(newBranchId);
-    fetchProducts();
+// ========== WATCHERS ==========
+// Reset trang khi thay đổi filter
+watch([() => filters.value.category_id, () => filters.value.supplier_id, () => filters.value.price_range, sortBy], () => {
+  currentPage.value = 1;
+});
+
+// Watch for branch changes
+watch(() => selectedBranchId.value, (newBranchId) => {
+  console.log('🏪 Đổi chi nhánh:', newBranchId ?? 'Tất cả');
+  productsStore.setSelectedBranch(newBranchId);
+  fetchProducts();
+});
+
+// Watch route query for category from header navigation
+watch(() => route.query.category, (newCategoryId) => {
+  if (newCategoryId) {
+    filters.value.category_id = Number(newCategoryId);
   }
-);
+}, { immediate: true });
+
+// Watch route query for supplier
+watch(() => route.query.supplier, (newSupplierId) => {
+  if (newSupplierId) {
+    filters.value.supplier_id = Number(newSupplierId);
+  }
+}, { immediate: true });
 
 // ========== LIFECYCLE ==========
 onMounted(async () => {
+  // Lấy category từ URL nếu có
+  if (route.query.category) {
+    filters.value.category_id = Number(route.query.category);
+  }
+  if (route.query.supplier) {
+    filters.value.supplier_id = Number(route.query.supplier);
+  }
+  if (route.query.search) {
+    searchQuery.value = String(route.query.search);
+  }
+
   // Fetch tất cả data cần thiết khi component mount
-  // Bao gồm cả danh sách chi nhánh để người dùng có thể lọc
   await Promise.all([
     branchesStore.fetchBranches(),
-    productsStore.fetchProducts(), // Mặc định chỉ lấy sản phẩm có trong kho
+    productsStore.fetchProducts(),
     categoriesStore.fetchCategories(),
     suppliersStore.fetchSuppliers(),
   ]);
@@ -494,6 +635,21 @@ onMounted(async () => {
   border-color: rgba(0, 212, 255, 0.4) !important;
 }
 
+/* List view image - responsive */
+.product-list-image {
+  width: 160px;
+  min-width: 160px;
+  height: 160px;
+}
+
+@media (max-width: 600px) {
+  .product-list-image {
+    width: 100%;
+    min-width: 100%;
+    height: 200px;
+  }
+}
+
 .image-container {
   position: relative;
 }
@@ -532,6 +688,16 @@ onMounted(async () => {
 
 .product-title {
   transition: color 0.3s ease;
+}
+
+/* 2 line truncate */
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
+  min-height: 2.6em;
 }
 
 .empty-state {
