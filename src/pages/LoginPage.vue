@@ -12,7 +12,7 @@
               <div class="logo-wrapper mb-4">
                 <v-icon size="48" class="logo-icon">mdi-store</v-icon>
               </div>
-              <h1 class="text-h4 font-weight-bold gradient-text">Wibu Shop</h1>
+              <h1 class="text-h4 font-weight-bold gradient-text">PerW Shop</h1>
               <p class="text-body-2 text-grey mt-2">Đăng nhập để tiếp tục mua sắm</p>
             </div>
 
@@ -63,6 +63,20 @@
                   Quên mật khẩu?
                 </a>
               </div>
+
+              <!-- Session Expired Warning -->
+              <v-alert
+                v-if="sessionExpiredMessage"
+                type="warning"
+                variant="tonal"
+                rounded="lg"
+                class="mb-4"
+                closable
+                @click:close="clearSessionExpiredMessage"
+              >
+                <v-icon start>mdi-clock-alert-outline</v-icon>
+                {{ sessionExpiredMessage }}
+              </v-alert>
 
               <!-- Error Message -->
               <v-alert
@@ -139,14 +153,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.store';
+import { useToast } from '@/composables/useToast';
 import apiClient from '@/api';
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const toast = useToast();
 
 // Form data
 const email = ref('');
@@ -157,6 +173,7 @@ const showPassword = ref(false);
 // State
 const isLoading = ref(false);
 const errorMessage = ref('');
+const sessionExpiredMessage = ref(''); // Thông báo session hết hạn
 const errors = reactive({
   email: '',
   password: '',
@@ -173,12 +190,32 @@ const passwordRules = [
   (v: string) => v.length >= 6 || 'Mật khẩu phải có ít nhất 6 ký tự',
 ];
 
+// Kiểm tra và hiển thị thông báo session expired khi component mount
+onMounted(() => {
+  const isSessionExpired = sessionStorage.getItem('session_expired');
+  const reason = sessionStorage.getItem('session_expired_reason');
+  
+  if (isSessionExpired === 'true' && reason) {
+    sessionExpiredMessage.value = reason;
+    // Clear auth store nếu chưa được clear
+    authStore.clearUser();
+  }
+});
+
+// Clear thông báo session expired
+const clearSessionExpiredMessage = () => {
+  sessionExpiredMessage.value = '';
+  sessionStorage.removeItem('session_expired');
+  sessionStorage.removeItem('session_expired_reason');
+};
+
 // Handle Login
 const handleLogin = async () => {
   // Clear previous errors
   errorMessage.value = '';
   errors.email = '';
   errors.password = '';
+  clearSessionExpiredMessage(); // Clear session expired message
 
   // Basic validation
   if (!email.value) {
@@ -220,6 +257,9 @@ const handleLogin = async () => {
 
       // Lưu user vào store
       authStore.login(user);
+
+      // Hiển thị toast thành công
+      toast.success('Chào mừng bạn quay trở lại!');
 
       // Redirect về trang trước đó hoặc trang chủ
       const redirectTo = (route.query.redirect as string) || '/';

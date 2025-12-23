@@ -389,6 +389,262 @@
           </v-card>
         </v-col>
       </v-row>
+
+      <!-- Reviews Section -->
+      <v-row class="mt-8">
+        <v-col cols="12">
+          <v-card class="reviews-section rounded-xl" variant="outlined">
+            <!-- Header -->
+            <v-card-title class="d-flex align-center justify-space-between pa-5">
+              <div class="d-flex align-center">
+                <v-icon start color="warning" size="28">mdi-star-circle</v-icon>
+                <span class="text-h5 font-weight-bold">Đánh giá sản phẩm</span>
+                <v-chip color="primary" variant="tonal" size="small" class="ml-3">
+                  {{ reviews.length }} đánh giá
+                </v-chip>
+              </div>
+            </v-card-title>
+            
+            <v-divider />
+
+            <v-card-text class="pa-5">
+              <v-row>
+                <!-- Rating Summary (Left) -->
+                <v-col cols="12" md="4">
+                  <div class="rating-summary text-center pa-6 rounded-xl">
+                    <!-- Overall Score -->
+                    <div class="overall-score mb-4">
+                      <span class="text-h2 font-weight-black neon-score">{{ averageRating.toFixed(1) }}</span>
+                      <span class="text-h5 text-medium-emphasis">/5</span>
+                    </div>
+                    
+                    <!-- Stars -->
+                    <v-rating
+                      :model-value="averageRating"
+                      color="warning"
+                      half-increments
+                      readonly
+                      size="large"
+                      class="mb-3"
+                    />
+                    
+                    <p class="text-body-2 text-medium-emphasis mb-6">
+                      Dựa trên {{ reviews.length }} đánh giá
+                    </p>
+                    
+                    <!-- Rating Breakdown -->
+                    <div class="rating-breakdown">
+                      <div v-for="star in [5, 4, 3, 2, 1]" :key="star" class="rating-bar d-flex align-center ga-3 mb-2">
+                        <div class="d-flex align-center" style="width: 60px;">
+                          <span class="text-body-2 font-weight-medium mr-1">{{ star }}</span>
+                          <v-icon size="16" color="warning">mdi-star</v-icon>
+                        </div>
+                        <v-progress-linear
+                          :model-value="getRatingPercentage(star)"
+                          color="warning"
+                          bg-color="rgba(255,255,255,0.1)"
+                          height="8"
+                          rounded
+                          class="flex-grow-1"
+                        />
+                        <span class="text-caption text-medium-emphasis" style="width: 40px;">
+                          {{ getRatingCount(star) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </v-col>
+
+                <!-- Write Review & Reviews List (Right) -->
+                <v-col cols="12" md="8">
+                  <!-- Write Review Form -->
+                  <v-card class="write-review-card rounded-xl mb-6 pa-5" variant="flat">
+                    <div class="d-flex align-center mb-4">
+                      <v-icon start color="primary">mdi-pencil-plus</v-icon>
+                      <span class="text-subtitle-1 font-weight-bold">Viết đánh giá của bạn</span>
+                    </div>
+                    
+                    <!-- Not Logged In -->
+                    <div v-if="!authStore.isAuthenticated" class="text-center py-6">
+                      <v-icon size="48" color="primary" class="mb-3 opacity-50">mdi-account-circle</v-icon>
+                      <p class="text-body-2 text-medium-emphasis mb-4">
+                        Vui lòng đăng nhập để viết đánh giá
+                      </p>
+                      <v-btn 
+                        color="primary" 
+                        variant="tonal" 
+                        rounded="lg"
+                        @click="router.push({ name: 'Login', query: { redirect: route.fullPath } })"
+                      >
+                        <v-icon start>mdi-login</v-icon>
+                        Đăng nhập ngay
+                      </v-btn>
+                    </div>
+
+                    <!-- Already Reviewed -->
+                    <div v-else-if="hasUserReviewed" class="text-center py-6">
+                      <v-icon size="48" color="success" class="mb-3">mdi-check-circle</v-icon>
+                      <p class="text-body-2 text-medium-emphasis">
+                        Bạn đã đánh giá sản phẩm này
+                      </p>
+                    </div>
+
+                    <!-- Review Form -->
+                    <div v-else>
+                      <!-- Rating Selection -->
+                      <div class="mb-4">
+                        <label class="text-body-2 text-medium-emphasis d-block mb-2">
+                          Đánh giá của bạn <span class="text-error">*</span>
+                        </label>
+                        <v-rating
+                          v-model="newReview.rating"
+                          color="warning"
+                          hover
+                          size="x-large"
+                          class="rating-input"
+                        />
+                        <div class="rating-labels d-flex ga-2 mt-2">
+                          <v-chip 
+                            v-for="label in ratingLabels" 
+                            :key="label.value"
+                            :color="newReview.rating === label.value ? 'warning' : 'default'"
+                            :variant="newReview.rating === label.value ? 'flat' : 'outlined'"
+                            size="x-small"
+                            class="cursor-pointer"
+                            @click="newReview.rating = label.value"
+                          >
+                            {{ label.text }}
+                          </v-chip>
+                        </div>
+                      </div>
+
+                      <!-- Comment -->
+                      <v-textarea
+                        v-model="newReview.comment"
+                        label="Nhận xét của bạn"
+                        placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+                        variant="outlined"
+                        rounded="lg"
+                        rows="4"
+                        counter="1000"
+                        maxlength="1000"
+                        class="mb-4"
+                      />
+
+                      <!-- Submit Button -->
+                      <div class="d-flex justify-end">
+                        <v-btn
+                          color="primary"
+                          rounded="lg"
+                          size="large"
+                          :loading="isSubmittingReview"
+                          :disabled="newReview.rating === 0"
+                          @click="submitReview"
+                        >
+                          <v-icon start>mdi-send</v-icon>
+                          Gửi đánh giá
+                        </v-btn>
+                      </div>
+                    </div>
+                  </v-card>
+
+                  <!-- Reviews List -->
+                  <div class="reviews-list">
+                    <div class="d-flex align-center justify-space-between mb-4">
+                      <span class="text-subtitle-1 font-weight-bold">
+                        <v-icon start size="small">mdi-comment-text-multiple</v-icon>
+                        Tất cả đánh giá
+                      </span>
+                      <v-select
+                        v-model="reviewSortBy"
+                        :items="reviewSortOptions"
+                        density="compact"
+                        variant="outlined"
+                        hide-details
+                        rounded="lg"
+                        style="max-width: 180px;"
+                      />
+                    </div>
+
+                    <!-- Empty State -->
+                    <div v-if="reviews.length === 0" class="empty-reviews text-center py-12">
+                      <v-icon size="64" color="primary" class="mb-4 opacity-30">mdi-comment-off-outline</v-icon>
+                      <p class="text-h6 font-weight-medium mb-2">Chưa có đánh giá nào</p>
+                      <p class="text-body-2 text-medium-emphasis">
+                        Hãy là người đầu tiên đánh giá sản phẩm này!
+                      </p>
+                    </div>
+
+                    <!-- Reviews -->
+                    <v-card
+                      v-for="review in sortedReviews"
+                      :key="`${review.user_id}-${review.created_at}`"
+                      class="review-card rounded-xl mb-4 pa-4"
+                      variant="flat"
+                    >
+                      <div class="d-flex ga-4">
+                        <!-- Avatar -->
+                        <v-avatar color="primary" size="48">
+                          <span class="text-h6 font-weight-bold">{{ getInitials(review.user_name) }}</span>
+                        </v-avatar>
+
+                        <div class="flex-grow-1">
+                          <!-- Header -->
+                          <div class="d-flex align-center justify-space-between mb-2">
+                            <div>
+                              <span class="font-weight-bold">{{ review.user_name }}</span>
+                              <v-chip 
+                                v-if="review.is_verified_purchase" 
+                                color="success" 
+                                size="x-small" 
+                                variant="tonal"
+                                class="ml-2"
+                              >
+                                <v-icon start size="x-small">mdi-check-decagram</v-icon>
+                                Đã mua hàng
+                              </v-chip>
+                            </div>
+                            <span class="text-caption text-medium-emphasis">
+                              {{ formatReviewDate(review.created_at) }}
+                            </span>
+                          </div>
+
+                          <!-- Rating -->
+                          <v-rating
+                            :model-value="review.rating"
+                            color="warning"
+                            density="compact"
+                            size="small"
+                            readonly
+                            class="mb-2"
+                          />
+
+                          <!-- Comment -->
+                          <p class="text-body-2 mb-0 review-comment">
+                            {{ review.comment || 'Không có nhận xét.' }}
+                          </p>
+                        </div>
+                      </div>
+                    </v-card>
+
+                    <!-- Load More -->
+                    <div v-if="reviews.length > 5 && !showAllReviews" class="text-center mt-4">
+                      <v-btn 
+                        variant="outlined" 
+                        rounded="lg"
+                        @click="showAllReviews = true"
+                      >
+                        <v-icon start>mdi-chevron-down</v-icon>
+                        Xem thêm {{ reviews.length - 5 }} đánh giá
+                      </v-btn>
+                    </div>
+                  </div>
+                </v-col>
+              </v-row>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
     </v-container>
     </template>
   </div>
@@ -403,6 +659,8 @@ import { useCartStore } from '@/stores/cart.store';
 import { useAuthStore } from '@/stores/auth.store';
 import { useWishlistStore } from '@/stores/wishlist.store';
 import { useToast } from '@/composables/useToast';
+import { getProductReviews, createReview } from '@/api/reviews.api';
+import type { Review } from '@/api/reviews.api';
 import type { ProductDetail } from '@/types';
 
 // ========== ROUTER ==========
@@ -732,6 +990,234 @@ const toggleWishlist = () => {
   }
 };
 
+// ========== REVIEWS SECTION ==========
+
+// Sử dụng Review interface từ @/api/reviews.api.ts
+
+// State cho reviews
+const reviews = ref<Review[]>([]);
+const isLoadingReviews = ref(false);
+const isSubmittingReview = ref(false);
+const showAllReviews = ref(false);
+const reviewSortBy = ref('newest');
+
+// Form viết review mới
+const newReview = ref({
+  rating: 0,
+  comment: ''
+});
+
+// Rating labels
+const ratingLabels = [
+  { value: 1, text: 'Rất tệ' },
+  { value: 2, text: 'Tệ' },
+  { value: 3, text: 'Bình thường' },
+  { value: 4, text: 'Tốt' },
+  { value: 5, text: 'Tuyệt vời' },
+];
+
+// Sort options
+const reviewSortOptions = [
+  { title: 'Mới nhất', value: 'newest' },
+  { title: 'Cũ nhất', value: 'oldest' },
+  { title: 'Cao nhất', value: 'highest' },
+  { title: 'Thấp nhất', value: 'lowest' },
+];
+
+// Computed: Kiểm tra user đã review chưa
+const hasUserReviewed = computed(() => {
+  if (!authStore.user?.id) return false;
+  return reviews.value.some(r => r.user_id === authStore.user!.id);
+});
+
+// Computed: Average rating
+const averageRating = computed(() => {
+  if (reviews.value.length === 0) return product.value?.rating || 0;
+  const sum = reviews.value.reduce((acc, r) => acc + r.rating, 0);
+  return sum / reviews.value.length;
+});
+
+// Computed: Sorted reviews
+const sortedReviews = computed(() => {
+  const reviewsToShow = showAllReviews.value ? reviews.value : reviews.value.slice(0, 5);
+  
+  const sorted = [...reviewsToShow].sort((a, b) => {
+    switch (reviewSortBy.value) {
+      case 'oldest':
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      case 'highest':
+        return b.rating - a.rating;
+      case 'lowest':
+        return a.rating - b.rating;
+      case 'newest':
+      default:
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+  });
+  
+  return sorted;
+});
+
+// Helper: Get rating count
+const getRatingCount = (star: number): number => {
+  return reviews.value.filter(r => r.rating === star).length;
+};
+
+// Helper: Get rating percentage
+const getRatingPercentage = (star: number): number => {
+  if (reviews.value.length === 0) return 0;
+  return (getRatingCount(star) / reviews.value.length) * 100;
+};
+
+// Helper: Get initials from name
+const getInitials = (name: string): string => {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+};
+
+// Helper: Format review date
+const formatReviewDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Hôm nay';
+  if (diffDays === 1) return 'Hôm qua';
+  if (diffDays < 7) return `${diffDays} ngày trước`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} tuần trước`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} tháng trước`;
+  
+  return date.toLocaleDateString('vi-VN');
+};
+
+// Fetch reviews - TẠM THỜI DÙNG MOCK DATA
+// (Backend EDMX đang có vấn đề, sẽ bật API lại khi fix xong)
+const fetchReviews = async () => {
+  if (!product.value?.id) return;
+  
+  isLoadingReviews.value = true;
+  
+  try {
+    // TODO: Bật API khi Backend fix xong EDMX
+    // const data = await getProductReviews(product.value.id);
+    // reviews.value = data;
+    
+    // Mock data tạm thời
+    reviews.value = [
+      {
+        user_id: 1,
+        product_id: product.value.id,
+        user_name: 'Nguyễn Văn An',
+        rating: 5,
+        comment: 'Sản phẩm tuyệt vời! Chất lượng đúng như mô tả, đóng gói cẩn thận. Sẽ ủng hộ shop dài dài.',
+        is_approved: true,
+        is_verified_purchase: true,
+        status: 'approved',
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        user_id: 2,
+        product_id: product.value.id,
+        user_name: 'Trần Thị Bình',
+        rating: 4,
+        comment: 'Hàng đẹp, giao hàng nhanh. Chỉ tiếc là box hơi móp một chút nhưng figure bên trong vẫn nguyên vẹn.',
+        is_approved: true,
+        is_verified_purchase: true,
+        status: 'approved',
+        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        user_id: 3,
+        product_id: product.value.id,
+        user_name: 'Lê Minh Tuấn',
+        rating: 5,
+        comment: 'Authentic 100%, paint job rất đẹp. Shop uy tín!',
+        is_approved: true,
+        is_verified_purchase: true,
+        status: 'approved',
+        created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        user_id: 4,
+        product_id: product.value.id,
+        user_name: 'Phạm Hoàng Dũng',
+        rating: 3,
+        comment: 'Sản phẩm OK, nhưng giá hơi cao so với thị trường.',
+        is_approved: true,
+        is_verified_purchase: false,
+        status: 'approved',
+        created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    reviews.value = [];
+  } finally {
+    isLoadingReviews.value = false;
+  }
+};
+
+// Submit review - TẠM THỜI DÙNG MOCK
+// (Backend EDMX đang có vấn đề, sẽ bật API lại khi fix xong)
+const submitReview = async () => {
+  if (!authStore.isAuthenticated || !product.value) {
+    toast.error('Vui lòng đăng nhập để đánh giá');
+    return;
+  }
+  
+  if (newReview.value.rating === 0) {
+    toast.warning('Vui lòng chọn số sao đánh giá');
+    return;
+  }
+  
+  isSubmittingReview.value = true;
+  
+  try {
+    // TODO: Bật API khi Backend fix xong EDMX
+    // const result = await createReview(product.value.id, {
+    //   Rating: newReview.value.rating,
+    //   Comment: newReview.value.comment,
+    // });
+    
+    // Mock: Thêm review mới vào danh sách
+    const mockNewReview: Review = {
+      user_id: authStore.user!.id,
+      product_id: product.value.id,
+      user_name: authStore.user!.full_name || authStore.user!.name || 'Bạn',
+      rating: newReview.value.rating,
+      comment: newReview.value.comment,
+      is_approved: true, // Auto approved cho mock
+      is_verified_purchase: true,
+      status: 'approved',
+      created_at: new Date().toISOString(),
+    };
+    
+    reviews.value.unshift(mockNewReview);
+    
+    // Reset form
+    newReview.value = { rating: 0, comment: '' };
+    
+    toast.success('Đánh giá đã được gửi thành công!');
+  } catch (error: any) {
+    toast.error(error.response?.data?.Message || 'Không thể gửi đánh giá');
+  } finally {
+    isSubmittingReview.value = false;
+  }
+};
+
+// Watch product change để fetch reviews
+watch(() => product.value?.id, (newId) => {
+  if (newId) {
+    fetchReviews();
+  }
+}, { immediate: true });
+
 // ========== LIFECYCLE ==========
 onMounted(() => {
   const productId = route.query.id;
@@ -935,5 +1421,85 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 0.85em;
   color: #00d4ff;
+}
+
+/* ========== REVIEWS SECTION ========== */
+.reviews-section {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Rating Summary */
+.rating-summary {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.08) 0%, rgba(255, 152, 0, 0.05) 100%);
+  border: 1px solid rgba(255, 193, 7, 0.15);
+}
+
+.neon-score {
+  background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.rating-breakdown {
+  text-align: left;
+}
+
+/* Write Review Card */
+.write-review-card {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rating-input :deep(.v-rating__item) {
+  padding: 4px;
+}
+
+.rating-input :deep(.v-rating__item .v-btn) {
+  width: 40px;
+  height: 40px;
+}
+
+.rating-labels .v-chip {
+  transition: all 0.2s ease;
+}
+
+.rating-labels .v-chip:hover {
+  transform: scale(1.05);
+}
+
+/* Review Card */
+.review-card {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.review-card:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.review-comment {
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.7;
+}
+
+/* Empty Reviews State */
+.empty-reviews {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* Reviews List Sort Select */
+.reviews-list :deep(.v-select .v-field) {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Cursor pointer for clickable elements */
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>

@@ -217,9 +217,11 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
+import { useToast } from '@/composables/useToast';
 import apiClient from '@/api';
 
 const router = useRouter();
+const toast = useToast();
 
 // Form data
 const formData = reactive({
@@ -337,6 +339,9 @@ const handleRegister = async () => {
 
     if (isSuccess) {
       successMessage.value = message || 'Đăng ký thành công! Đang chuyển hướng...';
+      
+      // Hiển thị toast thành công
+      toast.success('Đăng ký tài khoản thành công!');
       
       // Chuyển về trang login sau 2 giây
       setTimeout(() => {

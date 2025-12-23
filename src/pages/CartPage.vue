@@ -293,21 +293,6 @@
         </v-card>
       </v-col>
     </v-row>
-
-    <!-- Snackbar Notification -->
-    <v-snackbar
-      v-model="snackbar.show"
-      :color="snackbar.color"
-      :timeout="3000"
-      location="top"
-    >
-      {{ snackbar.text }}
-      <template v-slot:actions>
-        <v-btn variant="text" @click="snackbar.show = false">
-          Đóng
-        </v-btn>
-      </template>
-    </v-snackbar>
   </v-container>
 </template>
 
@@ -316,20 +301,17 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCartStore } from '@/stores/cart.store';
 import { useAuthStore } from '@/stores/auth.store';
+import { useToast } from '@/composables/useToast';
 
 const router = useRouter();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const toast = useToast();
 
 // ========== LOCAL STATE ==========
 const discountCodeInput = ref('');
 const isApplying = ref(false);
 const selectedPaymentMethod = ref('COD'); // COD hoặc BANK_TRANSFER
-const snackbar = ref({
-  show: false,
-  text: '',
-  color: 'success',
-});
 
 // ========== COMPUTED ==========
 const isAuthenticated = computed(() => authStore.isAuthenticated);
@@ -392,10 +374,6 @@ const formatPrice = (price: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 };
 
-const showSnackbar = (text: string, color: string = 'success') => {
-  snackbar.value = { show: true, text, color };
-};
-
 const updateQuantity = async (item: any, delta: number) => {
   await cartStore.changeQuantity(item.id, delta);
 };
@@ -403,9 +381,9 @@ const updateQuantity = async (item: any, delta: number) => {
 const removeItem = async (item: any) => {
   const success = await cartStore.removeItem(item.id);
   if (success) {
-    showSnackbar('Đã xóa sản phẩm khỏi giỏ hàng');
+    toast.success('Đã xóa sản phẩm khỏi giỏ hàng');
   } else {
-    showSnackbar('Không thể xóa sản phẩm', 'error');
+    toast.error('Không thể xóa sản phẩm');
   }
 };
 
@@ -413,14 +391,14 @@ const clearCart = async () => {
   if (confirm('Bạn có chắc muốn xóa tất cả sản phẩm trong giỏ hàng?')) {
     const success = await cartStore.clearCart();
     if (success) {
-      showSnackbar('Đã xóa tất cả sản phẩm');
+      toast.success('Đã xóa tất cả sản phẩm');
     }
   }
 };
 
 const applyDiscount = async () => {
   if (!discountCodeInput.value.trim()) {
-    showSnackbar('Vui lòng nhập mã giảm giá', 'warning');
+    toast.warning('Vui lòng nhập mã giảm giá');
     return;
   }
   
@@ -429,27 +407,27 @@ const applyDiscount = async () => {
   isApplying.value = false;
   
   if (result.success) {
-    showSnackbar(result.message, 'success');
+    toast.success(result.message);
     discountCodeInput.value = ''; // Clear input after success
   } else {
-    showSnackbar(result.message, 'error');
+    toast.error(result.message);
   }
 };
 
 const removeDiscountCode = () => {
   cartStore.removeDiscountCode();
-  showSnackbar('Đã xóa mã giảm giá');
+  toast.info('Đã xóa mã giảm giá');
 };
 
 const proceedToCheckout = async () => {
   if (!isAuthenticated.value) {
-    showSnackbar('Vui lòng đăng nhập để tiếp tục thanh toán', 'warning');
+    toast.warning('Vui lòng đăng nhập để tiếp tục thanh toán');
     router.push({ name: 'Login', query: { redirect: '/cart' } });
     return;
   }
   
   if (cartItems.value.length === 0) {
-    showSnackbar('Giỏ hàng đang trống', 'warning');
+    toast.warning('Giỏ hàng đang trống');
     return;
   }
   
@@ -460,7 +438,7 @@ const proceedToCheckout = async () => {
   const shippingAddress = 'Địa chỉ mặc định'; // TODO: Cho phép user chọn địa chỉ
   
   try {
-    showSnackbar('Đang xử lý đơn hàng...', 'info');
+    toast.info('Đang xử lý đơn hàng...');
     
     // Gọi API tạo đơn hàng thực sự trong database
     const { ordersApi } = await import('@/api/orders.api');
@@ -512,17 +490,17 @@ const proceedToCheckout = async () => {
       };
       localStorage.setItem('checkout_order', JSON.stringify(orderSummary));
       
-      showSnackbar(message || 'Đặt hàng thành công!', 'success');
+      toast.success(message || 'Đặt hàng thành công!');
       
       // Redirect to checkout page
       router.push({ name: 'Checkout', query: { id: orderData.Id ?? orderData.id } });
     } else {
-      showSnackbar(message || 'Không thể tạo đơn hàng', 'error');
+      toast.error(message || 'Không thể tạo đơn hàng');
     }
   } catch (error: any) {
     console.error('Checkout error:', error);
     const errorMessage = error.response?.data?.Message || error.response?.data?.message || 'Có lỗi xảy ra khi đặt hàng';
-    showSnackbar(errorMessage, 'error');
+    toast.error(errorMessage);
   }
 };
 
