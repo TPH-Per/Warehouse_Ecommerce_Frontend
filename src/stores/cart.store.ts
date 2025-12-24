@@ -139,10 +139,14 @@ export const useCartStore = defineStore('cart', () => {
 
         try {
             const response = await cartApi.getCart();
+            console.log('[CartStore] Raw API response:', response.data);
+
             const { isSuccess, result, message } = handleResponse(response.data);
 
             if (isSuccess && Array.isArray(result)) {
                 items.value = result.map(normalizeCartItem);
+                console.log('[CartStore] Normalized items:', items.value);
+                console.log('[CartStore] Grouped by branch:', groupedByBranch.value);
             } else {
                 // Không hiển thị lỗi nếu chỉ là empty cart
                 items.value = [];

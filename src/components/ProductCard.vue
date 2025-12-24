@@ -147,28 +147,10 @@ const addToCart = async () => {
     return;
   }
   
-  // Nếu không có variantId, chuyển đến trang chi tiết để chọn
-  if (!props.product.variantId) {
-    toast.info('Vui lòng chọn phiên bản sản phẩm');
-    router.push(`/product?id=${props.product.id}`);
-    return;
-  }
-  
-  isAddingToCart.value = true;
-  
-  const result = await cartStore.addToCart({
-    productVariantId: props.product.variantId,
-    quantity: 1,
-    price: props.product.price,
-  });
-  
-  isAddingToCart.value = false;
-  
-  if (result.success) {
-    toast.success(`Đã thêm "${props.product.name}" vào giỏ hàng!`);
-  } else {
-    toast.error(result.message);
-  }
+  // Luôn chuyển đến trang chi tiết để chọn chi nhánh và phiên bản
+  // Vì thêm vào giỏ hàng yêu cầu chọn chi nhánh cụ thể
+  toast.info('Vui lòng chọn chi nhánh và phiên bản sản phẩm');
+  router.push(`/product?id=${props.product.id}`);
   
   emit('add-to-cart', props.product);
 };

@@ -112,7 +112,7 @@
 
                 <v-fade-transition>
                   <div v-if="editMode" class="d-flex ga-2 mt-4">
-                    <v-btn color="primary" size="large" rounded="pill" prepend-icon="mdi-content-save">
+                    <v-btn color="primary" size="large" rounded="pill" prepend-icon="mdi-content-save" @click="saveProfile" :loading="loading.saving">
                       Lưu thay đổi
                     </v-btn>
                     <v-btn variant="outlined" size="large" rounded="pill" @click="editMode = false">
@@ -184,7 +184,7 @@
                       </div>
                     </div>
                     <div class="d-flex flex-column ga-1">
-                      <v-btn icon="mdi-pencil-outline" size="small" variant="text" color="grey"></v-btn>
+                      <v-btn icon="mdi-pencil-outline" size="small" variant="text" color="grey" @click="handleEditAddress(address)"></v-btn>
                       <v-btn 
                         v-if="!address.is_default" 
                         icon="mdi-star-outline" 
@@ -192,8 +192,9 @@
                         variant="text" 
                         color="warning"
                         title="Đặt làm mặc định"
+                        @click="handleSetDefault(address.id)"
                       ></v-btn>
-                      <v-btn icon="mdi-trash-can-outline" size="small" variant="text" color="error"></v-btn>
+                      <v-btn icon="mdi-trash-can-outline" size="small" variant="text" color="error" @click="handleDeleteAddress(address.id)"></v-btn>
                     </div>
                   </div>
                 </v-card>
@@ -327,7 +328,7 @@
                   </v-col>
                 </v-row>
 
-                <v-btn color="primary" size="large" rounded="pill" class="mt-4" prepend-icon="mdi-shield-check">
+                <v-btn color="primary" size="large" rounded="pill" class="mt-4" prepend-icon="mdi-shield-check" @click="handleChangePassword" :loading="loading.saving">
                   Đổi mật khẩu
                 </v-btn>
               </v-card>
@@ -338,10 +339,10 @@
       </v-row>
     </v-container>
 
-    <!-- Dialog: Thêm địa chỉ -->
+    <!-- Dialog: Thêm/Sửa địa chỉ -->
     <v-dialog v-model="showAddressDialog" max-width="600">
       <v-card class="rounded-xl pa-6">
-        <h3 class="text-h5 font-weight-bold mb-6">Thêm địa chỉ mới</h3>
+        <h3 class="text-h5 font-weight-bold mb-6">{{ editingAddressId ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới' }}</h3>
         
         <v-row>
           <v-col cols="12" sm="6">
@@ -404,8 +405,8 @@
         </v-row>
 
         <div class="d-flex ga-2 mt-4 justify-end">
-          <v-btn variant="outlined" rounded="pill" @click="showAddressDialog = false">Hủy</v-btn>
-          <v-btn color="primary" rounded="pill">Lưu địa chỉ</v-btn>
+          <v-btn variant="outlined" rounded="pill" @click="showAddressDialog = false; resetAddressForm()">Hủy</v-btn>
+          <v-btn color="primary" rounded="pill" @click="saveAddress" :loading="loading.saving">Lưu địa chỉ</v-btn>
         </div>
       </v-card>
     </v-dialog>
@@ -416,9 +417,36 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.store';
+import { getProfile, updateProfile, changePassword } from '@/api/profile.api';
+import { getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '@/api/address.api';
+import { getMyReviews } from '@/api/reviews.api';
+import type { UserProfile } from '@/api/profile.api';
+import type { Address as AddressType } from '@/api/address.api';
+import type { Review as ReviewType } from '@/api/reviews.api';
 
 const router = useRouter();
 const authStore = useAuthStore();
+
+// ========== LOADING STATES ==========
+const loading = reactive({
+  profile: false,
+  addresses: false,
+  reviews: false,
+  saving: false
+});
+
+// ========== SNACKBAR ==========
+const snackbar = reactive({
+  show: false,
+  message: '',
+  color: 'success'
+});
+
+const showMessage = (message: string, color: string = 'success') => {
+  snackbar.message = message;
+  snackbar.color = color;
+  snackbar.show = true;
+};
 
 interface User {
   id: number;
@@ -447,6 +475,7 @@ interface Address {
 }
 
 interface Review {
+  id?: number;
   user_id: number;
   product_id: number;
   product_name: string;
@@ -462,6 +491,7 @@ const tab = ref('personal');
 const activeTab = ref(['personal']);
 const editMode = ref(false);
 const showAddressDialog = ref(false);
+const editingAddressId = ref<number | null>(null);
 
 const menuItems = [
   { title: 'Thông tin cá nhân', value: 'personal', icon: 'mdi-account-outline' },
@@ -471,40 +501,19 @@ const menuItems = [
   { title: 'Bảo mật', value: 'security', icon: 'mdi-shield-lock-outline' },
 ];
 
-// ========== USER DATA TỪ AUTH STORE ==========
-// Computed để lấy user từ store và map sang format phù hợp
-const user = computed<User>(() => {
-  const storeUser = authStore.user;
-  if (!storeUser) {
-    // Redirect về login nếu chưa đăng nhập
-    return {
-      id: 0,
-      name: '',
-      full_name: 'Chưa đăng nhập',
-      email: '',
-      email_verified_at: null,
-      phone_number: null,
-      status: 'inactive',
-      role_id: 0,
-      role_name: 'Guest',
-      created_at: '',
-      updated_at: ''
-    };
-  }
-  
-  return {
-    id: storeUser.id,
-    name: storeUser.name,
-    full_name: storeUser.full_name,
-    email: storeUser.email,
-    email_verified_at: null, // Không có trong response login
-    phone_number: storeUser.phone_number || null,
-    status: 'active', // Mặc định active vì đã login được
-    role_id: storeUser.role_id || 0,
-    role_name: (storeUser as any).role_name || 'Khách hàng',
-    created_at: '',
-    updated_at: ''
-  };
+// ========== USER DATA ==========
+const user = ref<User>({
+  id: 0,
+  name: '',
+  full_name: 'Đang tải...',
+  email: '',
+  email_verified_at: null,
+  phone_number: null,
+  status: 'inactive',
+  role_id: 0,
+  role_name: 'Guest',
+  created_at: '',
+  updated_at: ''
 });
 
 // Form để edit user
@@ -521,7 +530,7 @@ watch(user, (newUser) => {
   userForm.full_name = newUser.full_name;
   userForm.email = newUser.email;
   userForm.phone_number = newUser.phone_number || '';
-}, { immediate: true });
+}, { immediate: true, deep: true });
 
 const passwordForm = reactive({
   current: '',
@@ -529,31 +538,8 @@ const passwordForm = reactive({
   confirm: ''
 });
 
-// Mock Addresses Data theo cấu trúc database
-const addresses = ref<Address[]>([
-  {
-    id: 1,
-    user_id: 1,
-    recipient_name: 'Nguyễn Văn Fan',
-    recipient_phone: '0912345678',
-    street_address: '123 Đường Nguyễn Huệ',
-    ward: 'Phường Bến Nghé',
-    district: 'Quận 1',
-    city: 'TP. Hồ Chí Minh',
-    is_default: true
-  },
-  {
-    id: 2,
-    user_id: 1,
-    recipient_name: 'Nguyễn Văn Fan',
-    recipient_phone: '0912345678',
-    street_address: '456 Đường Lê Lợi',
-    ward: 'Phường 1',
-    district: 'Quận 3',
-    city: 'TP. Hồ Chí Minh',
-    is_default: false
-  }
-]);
+// ========== ADDRESSES DATA ==========
+const addresses = ref<Address[]>([]);
 
 const addressForm = reactive({
   recipient_name: '',
@@ -565,42 +551,19 @@ const addressForm = reactive({
   is_default: false
 });
 
-// Mock Reviews Data theo cấu trúc database
-const reviews = ref<Review[]>([
-  {
-    user_id: 1,
-    product_id: 1,
-    product_name: 'Mikasa Ackerman Figure 1/7',
-    product_image: 'https://placehold.co/100x100?text=Mikasa',
-    rating: 5,
-    comment: 'Chất lượng tuyệt vời! Chi tiết sơn rất sắc nét, đóng gói cẩn thận 3 lớp chống sốc đúng như cam kết của PerW.',
-    is_approved: true,
-    status: 'approved',
-    created_at: '2024-12-12T15:30:00'
-  },
-  {
-    user_id: 1,
-    product_id: 2,
-    product_name: 'Gojo Satoru Figure 1/7',
-    product_image: 'https://placehold.co/100x100?text=Gojo',
-    rating: 4,
-    comment: 'Sản phẩm đẹp, giao hàng nhanh. Trừ 1 sao vì hộp bị xước nhẹ.',
-    is_approved: true,
-    status: 'approved',
-    created_at: '2024-12-10T09:00:00'
-  },
-  {
-    user_id: 1,
-    product_id: 3,
-    product_name: 'Nendoroid Power',
-    product_image: 'https://placehold.co/100x100?text=Power',
-    rating: 5,
-    comment: 'Sản phẩm chính hãng, rất hài lòng!',
-    is_approved: false,
-    status: 'pending',
-    created_at: '2024-12-18T11:20:00'
-  }
-]);
+const resetAddressForm = () => {
+  addressForm.recipient_name = '';
+  addressForm.recipient_phone = '';
+  addressForm.street_address = '';
+  addressForm.ward = '';
+  addressForm.district = '';
+  addressForm.city = '';
+  addressForm.is_default = false;
+  editingAddressId.value = null;
+};
+
+// ========== REVIEWS DATA ==========
+const reviews = ref<Review[]>([]);
 
 const notifications = reactive({
   orderEmail: true,
@@ -608,11 +571,273 @@ const notifications = reactive({
   newRelease: false
 });
 
+// ========== API CALLS ==========
+const fetchProfile = async () => {
+  loading.profile = true;
+  
+  // First, use authStore data immediately if available
+  const storeUser = authStore.user;
+  if (storeUser) {
+    user.value = {
+      id: storeUser.id,
+      name: storeUser.name,
+      full_name: storeUser.full_name,
+      email: storeUser.email,
+      email_verified_at: null,
+      phone_number: storeUser.phone_number || null,
+      status: 'active',
+      role_id: storeUser.role_id || 0,
+      role_name: storeUser.role_name || 'Khách hàng',
+      created_at: '',
+      updated_at: ''
+    };
+  }
+  
+  // Then try to get fresh data from API
+  try {
+    const response = await getProfile();
+    console.log('getProfile response:', response.data);
+    
+    if (response.data.Success && response.data.Data) {
+      const data = response.data.Data as any;
+      user.value = {
+        id: data.Id || data.id,
+        name: data.Name || data.name,
+        full_name: data.FullName || data.full_name,
+        email: data.Email || data.email,
+        email_verified_at: null,
+        phone_number: data.PhoneNumber || data.phone_number,
+        status: data.Status || data.status || 'active',
+        role_id: data.RoleId || data.role_id,
+        role_name: data.RoleName || data.role_name || 'Khách hàng',
+        created_at: data.CreatedAt || data.created_at || '',
+        updated_at: data.UpdatedAt || data.updated_at || ''
+      };
+    } else if (response.data.success && response.data.data) {
+      // Also check lowercase keys
+      const data = response.data.data as any;
+      user.value = {
+        id: data.Id || data.id,
+        name: data.Name || data.name,
+        full_name: data.FullName || data.full_name,
+        email: data.Email || data.email,
+        email_verified_at: null,
+        phone_number: data.PhoneNumber || data.phone_number,
+        status: data.Status || data.status || 'active',
+        role_id: data.RoleId || data.role_id,
+        role_name: data.RoleName || data.role_name || 'Khách hàng',
+        created_at: data.CreatedAt || data.created_at || '',
+        updated_at: data.UpdatedAt || data.updated_at || ''
+      };
+    }
+  } catch (error: any) {
+    console.error('fetchProfile error:', error);
+    // Already have authStore data, so just log the error
+  } finally {
+    loading.profile = false;
+  }
+};
+
+const saveProfile = async () => {
+  loading.saving = true;
+  try {
+    const response = await updateProfile({
+      name: userForm.name,
+      full_name: userForm.full_name,
+      email: userForm.email,
+      phone_number: userForm.phone_number
+    });
+    const isSuccess = response.data.Success || response.data.success;
+    if (isSuccess) {
+      showMessage('Cập nhật thông tin thành công!', 'success');
+      // Update authStore with new data
+      authStore.updateUser({
+        name: userForm.name,
+        full_name: userForm.full_name,
+        email: userForm.email,
+        phone_number: userForm.phone_number
+      });
+      await fetchProfile();
+      editMode.value = false;
+    } else {
+      showMessage(response.data.Message || response.data.message || 'Có lỗi xảy ra', 'error');
+    }
+  } catch (error: any) {
+    showMessage(error.response?.data?.Message || error.response?.data?.message || 'Có lỗi xảy ra', 'error');
+  } finally {
+    loading.saving = false;
+  }
+};
+
+const fetchAddresses = async () => {
+  loading.addresses = true;
+  try {
+    const response = await getAddresses();
+    console.log('getAddresses response:', response.data);
+    
+    // Check for PascalCase first (from backend), then camelCase
+    const responseData = response.data.Data || response.data.data;
+    const isSuccess = response.data.Success || response.data.success;
+    
+    if (isSuccess && responseData && Array.isArray(responseData)) {
+      addresses.value = responseData.map((a: any) => ({
+        id: a.Id || a.id,
+        user_id: a.UserId || a.user_id,
+        recipient_name: a.RecipientName || a.recipient_name,
+        recipient_phone: a.RecipientPhone || a.recipient_phone,
+        street_address: a.StreetAddress || a.street_address,
+        ward: a.Ward || a.ward,
+        district: a.District || a.district,
+        city: a.City || a.city,
+        is_default: a.IsDefault || a.is_default || false
+      }));
+      console.log('Parsed addresses:', addresses.value);
+    } else {
+      console.log('No addresses found or not authenticated');
+      addresses.value = [];
+    }
+  } catch (error: any) {
+    console.error('fetchAddresses error:', error);
+    addresses.value = [];
+  } finally {
+    loading.addresses = false;
+  }
+};
+
+const saveAddress = async () => {
+  loading.saving = true;
+  try {
+    if (editingAddressId.value) {
+      // Update existing
+      const response = await updateAddress(editingAddressId.value, addressForm);
+      const isSuccess = response.data.Success || response.data.success;
+      if (isSuccess) {
+        showMessage('Cập nhật địa chỉ thành công!', 'success');
+      }
+    } else {
+      // Create new
+      const response = await createAddress(addressForm);
+      const isSuccess = response.data.Success || response.data.success;
+      if (isSuccess) {
+        showMessage('Thêm địa chỉ thành công!', 'success');
+      }
+    }
+    await fetchAddresses();
+    showAddressDialog.value = false;
+    resetAddressForm();
+  } catch (error: any) {
+    showMessage(error.response?.data?.Message || error.response?.data?.message || 'Có lỗi xảy ra', 'error');
+  } finally {
+    loading.saving = false;
+  }
+};
+
+const handleEditAddress = (address: Address) => {
+  editingAddressId.value = address.id;
+  addressForm.recipient_name = address.recipient_name;
+  addressForm.recipient_phone = address.recipient_phone;
+  addressForm.street_address = address.street_address;
+  addressForm.ward = address.ward;
+  addressForm.district = address.district;
+  addressForm.city = address.city;
+  addressForm.is_default = address.is_default;
+  showAddressDialog.value = true;
+};
+
+const handleDeleteAddress = async (id: number) => {
+  if (!confirm('Bạn có chắc muốn xóa địa chỉ này?')) return;
+  try {
+    await deleteAddress(id);
+    showMessage('Xóa địa chỉ thành công!', 'success');
+    await fetchAddresses();
+  } catch (error: any) {
+    showMessage(error.response?.data?.Message || 'Có lỗi xảy ra', 'error');
+  }
+};
+
+const handleSetDefault = async (id: number) => {
+  try {
+    await setDefaultAddress(id);
+    showMessage('Đã đặt làm địa chỉ mặc định!', 'success');
+    await fetchAddresses();
+  } catch (error: any) {
+    showMessage(error.response?.data?.Message || 'Có lỗi xảy ra', 'error');
+  }
+};
+
+const fetchReviews = async () => {
+  loading.reviews = true;
+  try {
+    const response = await getMyReviews();
+    console.log('getMyReviews response:', response.data);
+    
+    const responseData = response.data.Data || response.data.data;
+    const isSuccess = response.data.Success || response.data.success;
+    
+    if (isSuccess && responseData && Array.isArray(responseData)) {
+      reviews.value = responseData.map((r: any) => ({
+        id: r.Id || r.id,
+        user_id: r.UserId || r.user_id,
+        product_id: r.ProductId || r.product_id,
+        product_name: r.ProductName || r.product_name || 'Sản phẩm',
+        product_image: r.ProductImage || r.product_image,
+        rating: r.Rating || r.rating,
+        comment: r.Comment || r.comment,
+        is_approved: r.IsApproved || r.is_approved,
+        status: r.Status || r.status || 'pending',
+        created_at: r.CreatedAt || r.created_at
+      }));
+    } else {
+      reviews.value = [];
+    }
+  } catch (error: any) {
+    console.error('fetchReviews error:', error);
+    reviews.value = [];
+  } finally {
+    loading.reviews = false;
+  }
+};
+
+const handleChangePassword = async () => {
+  if (passwordForm.new !== passwordForm.confirm) {
+    showMessage('Mật khẩu xác nhận không khớp', 'error');
+    return;
+  }
+  if (passwordForm.new.length < 6) {
+    showMessage('Mật khẩu mới phải có ít nhất 6 ký tự', 'error');
+    return;
+  }
+  
+  loading.saving = true;
+  try {
+    const response = await changePassword({
+      current_password: passwordForm.current,
+      new_password: passwordForm.new,
+      confirm_password: passwordForm.confirm
+    });
+    const isSuccess = response.data.Success || response.data.success;
+    if (isSuccess) {
+      showMessage('Đổi mật khẩu thành công!', 'success');
+      passwordForm.current = '';
+      passwordForm.new = '';
+      passwordForm.confirm = '';
+    } else {
+      showMessage(response.data.Message || response.data.message || 'Có lỗi xảy ra', 'error');
+    }
+  } catch (error: any) {
+    showMessage(error.response?.data?.Message || error.response?.data?.message || 'Có lỗi xảy ra', 'error');
+  } finally {
+    loading.saving = false;
+  }
+};
+
 const getInitials = (name: string) => {
+  if (!name) return '?';
   return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 };
 
 const formatDate = (dateStr: string) => {
+  if (!dateStr) return 'N/A';
   const date = new Date(dateStr);
   return date.toLocaleDateString('vi-VN', {
     day: '2-digit',
@@ -638,6 +863,22 @@ const formatReviewStatus = (status: string) => {
   };
   return map[status] || status;
 };
+
+// ========== ON MOUNTED ==========
+onMounted(async () => {
+  // Check if user is logged in
+  if (!authStore.isAuthenticated) {
+    router.push('/login');
+    return;
+  }
+  
+  // Fetch all data
+  await Promise.all([
+    fetchProfile(),
+    fetchAddresses(),
+    fetchReviews()
+  ]);
+});
 </script>
 
 <style scoped>

@@ -193,8 +193,8 @@ const handleLogin = async () => {
   isLoading.value = true;
 
   try {
-    // Gọi API login
-    const response = await apiClient.post('/auth/login', {
+    // Gọi API login - sử dụng /profile/login để đảm bảo cookie được tạo đúng
+    const response = await apiClient.post('/profile/login', {
       email: email.value,
       password: password.value,
     });

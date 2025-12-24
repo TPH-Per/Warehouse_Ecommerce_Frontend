@@ -87,7 +87,7 @@ export const useAuthStore = defineStore('auth', () => {
     const logout = async () => {
         try {
             // Gọi API logout để xóa cookie phía server
-            await apiClient.post('/auth/logout');
+            await apiClient.post('/profile/logout');
         } catch (error) {
             // Ignore error - vẫn xóa local state
             console.log('Logout API error (ignored):', error);

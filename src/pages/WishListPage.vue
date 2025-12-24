@@ -471,17 +471,10 @@ const addToCart = async (item: WishlistItem) => {
     return;
   }
   
-  const result = await cartStore.addToCart({
-    productVariantId: item.variant.id,
-    quantity: 1,
-    price: item.variant.price,
-  });
-  
-  if (result.success) {
-    toast.success(`Đã thêm "${item.product.name}" vào giỏ hàng!`);
-  } else {
-    toast.error(result.message);
-  }
+  // Chuyển đến trang chi tiết để chọn chi nhánh
+  // Vì thêm vào giỏ hàng yêu cầu chọn chi nhánh cụ thể
+  toast.info('Vui lòng chọn chi nhánh và phiên bản sản phẩm');
+  router.push(`/product?id=${item.product.id}`);
 };
 
 const addAllToCart = async () => {
@@ -491,21 +484,8 @@ const addAllToCart = async () => {
     return;
   }
   
-  let successCount = 0;
-  for (const item of wishlistItems.value) {
-    const result = await cartStore.addToCart({
-      productVariantId: item.variant.id,
-      quantity: 1,
-      price: item.variant.price,
-    });
-    if (result.success) successCount++;
-  }
-  
-  if (successCount > 0) {
-    toast.success(`Đã thêm ${successCount} sản phẩm vào giỏ hàng!`);
-  } else {
-    toast.error('Không thể thêm sản phẩm vào giỏ hàng');
-  }
+  // Không thể thêm tất cả vì cần chọn chi nhánh cho từng sản phẩm
+  toast.warning('Vui lòng thêm từng sản phẩm vào giỏ hàng để chọn chi nhánh phù hợp');
 };
 </script>
 

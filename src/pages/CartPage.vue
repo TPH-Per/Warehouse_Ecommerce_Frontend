@@ -44,13 +44,38 @@
     <v-row v-else>
       <!-- Cart Items -->
       <v-col cols="12" lg="8">
+        <!-- Branch Selection Notice -->
+        <v-alert 
+          v-if="groupedCartItems.length > 1" 
+          type="info" 
+          variant="tonal" 
+          class="mb-4 rounded-xl"
+          icon="mdi-information"
+        >
+          <div class="font-weight-bold mb-1">Lưu ý khi thanh toán</div>
+          <div class="text-body-2">
+            Giỏ hàng của bạn có sản phẩm từ <strong>{{ groupedCartItems.length }} chi nhánh</strong> khác nhau. 
+            Mỗi đơn hàng chỉ được thanh toán từ một chi nhánh. Vui lòng chọn chi nhánh để thanh toán.
+          </div>
+        </v-alert>
+
         <!-- Group by Branch -->
         <div v-for="group in groupedCartItems" :key="group.id" class="mb-4">
           <v-card class="cart-group-card rounded-xl overflow-hidden" variant="outlined">
-            <!-- Branch Header -->
+            <!-- Branch Header with Selection -->
             <v-card-item class="branch-header py-3">
               <div class="d-flex justify-space-between align-center">
                 <div class="d-flex align-center ga-3">
+                  <!-- Checkbox to select this branch for checkout -->
+                  <v-checkbox
+                    v-if="groupedCartItems.length > 1"
+                    v-model="selectedBranchId"
+                    :value="group.id"
+                    color="primary"
+                    hide-details
+                    density="compact"
+                    @click.stop
+                  />
                   <v-avatar color="primary" size="36">
                     <v-icon size="small">mdi-store</v-icon>
                   </v-avatar>
@@ -58,13 +83,18 @@
                     <div class="text-subtitle-2 font-weight-bold">{{ group.name }}</div>
                     <div class="text-caption text-medium-emphasis">
                       <v-icon size="x-small" class="mr-1">mdi-map-marker</v-icon>
-                      {{ group.location }}
+                      {{ group.location || 'Chi nhánh ' + group.id }}
                     </div>
                   </div>
                 </div>
-                <v-chip size="x-small" color="primary" variant="tonal">
-                  {{ group.items.length }} sản phẩm
-                </v-chip>
+                <div class="d-flex align-center ga-2">
+                  <v-chip size="x-small" color="primary" variant="tonal">
+                    {{ group.items.length }} sản phẩm
+                  </v-chip>
+                  <v-chip size="x-small" color="success" variant="tonal">
+                    {{ formatPrice(getBranchSubtotal(group)) }}
+                  </v-chip>
+                </div>
               </div>
             </v-card-item>
 
@@ -147,9 +177,22 @@
             Tổng kết đơn hàng
           </h2>
 
+          <!-- Selected Branch Info -->
+          <div v-if="groupedCartItems.length > 1" class="mb-3 pa-3 rounded-lg" style="background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.15);">
+            <div class="text-caption text-medium-emphasis mb-1">Chi nhánh được chọn:</div>
+            <div v-if="selectedBranchInfo" class="font-weight-bold text-body-2">
+              <v-icon size="small" class="mr-1">mdi-store</v-icon>
+              {{ selectedBranchInfo.name }}
+            </div>
+            <div v-else class="text-warning text-body-2">
+              <v-icon size="small" class="mr-1" color="warning">mdi-alert</v-icon>
+              Chưa chọn chi nhánh
+            </div>
+          </div>
+
           <div class="summary-row mb-2">
-            <span class="text-body-2 text-medium-emphasis">Tạm tính ({{ cartCount }} món)</span>
-            <span class="text-body-2 font-weight-bold">{{ formatPrice(subTotal) }}</span>
+            <span class="text-body-2 text-medium-emphasis">Tạm tính ({{ selectedItemCount }} món)</span>
+            <span class="text-body-2 font-weight-bold">{{ formatPrice(selectedSubTotal) }}</span>
           </div>
 
           <div class="summary-row mb-2">
@@ -212,7 +255,7 @@
           <div class="summary-row total-row pa-3 rounded-lg mb-4">
             <span class="text-subtitle-1 font-weight-bold">Tổng cộng</span>
             <span class="text-h6 font-weight-bold neon-text-secondary">
-              {{ formatPrice(totalAmount) }}
+              {{ formatPrice(selectedTotal) }}
             </span>
           </div>
 
@@ -223,11 +266,23 @@
             size="large"
             rounded="xl"
             class="checkout-btn mb-2 font-weight-bold"
+            :disabled="!canCheckout"
             @click="proceedToCheckout"
           >
             <v-icon start>mdi-credit-card</v-icon>
             Tiến hành thanh toán
           </v-btn>
+
+          <!-- Validation Message -->
+          <v-alert 
+            v-if="!canCheckout && groupedCartItems.length > 1" 
+            type="warning" 
+            variant="tonal" 
+            density="compact" 
+            class="mb-2"
+          >
+            Vui lòng chọn một chi nhánh để thanh toán
+          </v-alert>
 
           <v-btn block variant="outlined" rounded="xl" size="small" :to="{ name: 'ProductList' }">
             Tiếp tục mua sắm
@@ -272,6 +327,7 @@ const authStore = useAuthStore();
 // ========== LOCAL STATE ==========
 const discountCodeInput = ref('');
 const isApplying = ref(false);
+const selectedBranchId = ref<number | null>(null);
 const snackbar = ref({
   show: false,
   text: '',
@@ -315,6 +371,54 @@ const groupedCartItems = computed(() => {
     }))
   }));
 });
+
+// Auto-select branch if only one
+watch(groupedCartItems, (groups) => {
+  if (groups.length === 1 && groups[0]) {
+    selectedBranchId.value = groups[0].id;
+  } else if (!groups.find(g => g.id === selectedBranchId.value)) {
+    selectedBranchId.value = null;
+  }
+}, { immediate: true });
+
+// Selected branch info
+const selectedBranchInfo = computed(() => {
+  if (!selectedBranchId.value) return null;
+  return groupedCartItems.value.find(g => g.id === selectedBranchId.value);
+});
+
+// Get items for selected branch only
+const selectedBranchItems = computed(() => {
+  if (!selectedBranchInfo.value) return [];
+  return selectedBranchInfo.value.items;
+});
+
+// Selected item count
+const selectedItemCount = computed(() => {
+  return selectedBranchItems.value.reduce((sum, item) => sum + item.quantity, 0);
+});
+
+// Selected subtotal
+const selectedSubTotal = computed(() => {
+  return selectedBranchItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+});
+
+// Selected total (with shipping and discount)
+const selectedTotal = computed(() => {
+  return Math.max(0, selectedSubTotal.value - discountAmount.value + shippingFee.value);
+});
+
+// Can checkout?
+const canCheckout = computed(() => {
+  if (groupedCartItems.value.length === 0) return false;
+  if (groupedCartItems.value.length === 1) return true;
+  return selectedBranchId.value !== null;
+});
+
+// Get subtotal for a specific branch
+const getBranchSubtotal = (group: any) => {
+  return group.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+};
 
 // ========== METHODS ==========
 const formatPrice = (price: number) => {
@@ -373,7 +477,7 @@ const removeDiscountCode = () => {
 const proceedToCheckout = () => {
   if (!isAuthenticated.value) {
     showSnackbar('Vui lòng đăng nhập để tiếp tục thanh toán', 'warning');
-    router.push({ name: 'Login', query: { redirect: '/cart' } });
+    router.push('/login?redirect=/cart');
     return;
   }
   
@@ -381,27 +485,42 @@ const proceedToCheckout = () => {
     showSnackbar('Giỏ hàng đang trống', 'warning');
     return;
   }
+
+  // Validate branch selection if multiple branches
+  if (groupedCartItems.value.length > 1 && !selectedBranchId.value) {
+    showSnackbar('Vui lòng chọn một chi nhánh để thanh toán', 'warning');
+    return;
+  }
+
+  // Get items to checkout (only from selected branch)
+  const itemsToCheckout = selectedBranchItems.value;
+  
+  if (itemsToCheckout.length === 0) {
+    showSnackbar('Không có sản phẩm nào được chọn', 'warning');
+    return;
+  }
   
   // Lưu thông tin đơn hàng vào localStorage cho checkout page
   const orderSummary = {
-    items: cartItems.value.map(item => ({
-      cartItemId: item.Id,
-      productId: item.ProductId,
-      variantId: item.ProductVariantId,
-      name: `${item.ProductName} - ${item.VariantName}`,
-      image: item.VariantImageUrl,
-      quantity: item.Quantity,
-      price: item.Price,
+    branchId: selectedBranchId.value,
+    branchName: selectedBranchInfo.value?.name || '',
+    items: itemsToCheckout.map(item => ({
+      cartItemId: item.id,
+      productId: item.product_id,
+      variantId: item.product_variant_id,
+      name: `${item.product_name} - ${item.variant.name}`,
+      image: item.variant.image_url,
+      quantity: item.quantity,
+      price: item.price,
     })),
-    subTotal: subTotal.value,
+    subTotal: selectedSubTotal.value,
     shippingFee: shippingFee.value,
     discountCode: appliedDiscountCode.value,
     discountAmount: discountAmount.value,
-    total: totalAmount.value,
-    branches: groupedCartItems.value.map(g => ({ id: g.id, name: g.name })),
+    total: selectedTotal.value,
   };
   localStorage.setItem('checkout_order', JSON.stringify(orderSummary));
-  router.push({ name: 'Checkout', query: { id: Date.now() } });
+  router.push('/checkout?id=' + Date.now());
 };
 
 // ========== LIFECYCLE ==========
