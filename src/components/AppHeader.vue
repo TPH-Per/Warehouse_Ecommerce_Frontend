@@ -70,7 +70,7 @@
                   @mouseenter="hoveredCategoryId = cat.id"
                 >
                   <router-link
-                    :to="{ name: 'ProductList', query: { category: cat.id } }"
+                    :to="`/productlist?category=${cat.id}`"
                     class="category-item-link"
                   >
                     <v-avatar size="28" :color="getCategoryColor(cat.id)" variant="tonal">
@@ -87,7 +87,7 @@
               <!-- View All -->
               <div class="pa-3 pt-1">
                 <v-btn
-                  :to="{ name: 'ProductList' }"
+                  to="/productlist"
                   variant="text"
                   color="primary"
                   size="small"
@@ -180,6 +180,96 @@
               </div>
             </div>
           </div>
+        </v-card>
+      </v-menu>
+
+      <!-- Price Filter Dropdown -->
+      <v-menu transition="slide-y-transition">
+        <template v-slot:activator="{ props }">
+          <v-btn
+            v-bind="props"
+            variant="text"
+            class="nav-link"
+            append-icon="mdi-chevron-down"
+            prepend-icon="mdi-currency-usd"
+          >
+            Lọc giá
+          </v-btn>
+        </template>
+        
+        <v-card class="price-filter-menu rounded-xl pa-4" width="320">
+          <div class="text-subtitle-2 font-weight-bold mb-3">
+            <v-icon size="small" color="primary" class="mr-1">mdi-filter-variant</v-icon>
+            Lọc theo khoảng giá
+          </div>
+          
+          <!-- Quick Price Range Chips -->
+          <div class="d-flex flex-wrap ga-2 mb-4">
+            <v-chip
+              v-for="range in priceRanges"
+              :key="range.label"
+              :to="{ name: 'ProductList', query: range.query }"
+              size="small"
+              :variant="isPriceRangeActive(range) ? 'flat' : 'outlined'"
+              :color="isPriceRangeActive(range) ? 'primary' : undefined"
+              class="price-chip"
+            >
+              {{ range.label }}
+            </v-chip>
+          </div>
+          
+          <v-divider class="mb-4" />
+          
+          <!-- Custom Price Range Input -->
+          <div class="text-caption text-medium-emphasis mb-2">Hoặc nhập khoảng giá tùy chỉnh</div>
+          <div class="d-flex align-center ga-2 mb-3">
+            <v-text-field
+              v-model.number="customPriceMin"
+              type="number"
+              placeholder="Từ"
+              variant="outlined"
+              density="compact"
+              hide-details
+              class="price-input"
+              suffix="₫"
+            />
+            <span class="text-medium-emphasis">-</span>
+            <v-text-field
+              v-model.number="customPriceMax"
+              type="number"
+              placeholder="Đến"
+              variant="outlined"
+              density="compact"
+              hide-details
+              class="price-input"
+              suffix="₫"
+            />
+          </div>
+          
+          <v-btn
+            color="primary"
+            block
+            size="small"
+            rounded="lg"
+            @click="applyCustomPriceFilter"
+            :disabled="!customPriceMin && !customPriceMax"
+          >
+            <v-icon start size="small">mdi-check</v-icon>
+            Áp dụng
+          </v-btn>
+          
+          <v-btn
+            v-if="hasActivePriceFilter"
+            variant="text"
+            color="error"
+            block
+            size="small"
+            class="mt-2"
+            @click="clearPriceFilter"
+          >
+            <v-icon start size="small">mdi-close</v-icon>
+            Xóa bộ lọc giá
+          </v-btn>
         </v-card>
       </v-menu>
     </div>
@@ -409,6 +499,77 @@ const handleLogout = () => {
 
 const toggleNotifications = () => {
   alert('Mở danh sách thông báo');
+};
+
+// ========== PRICE FILTER ==========
+import { useRoute } from 'vue-router';
+const route = useRoute();
+
+// Predefined price ranges
+const priceRanges = [
+  { label: 'Tất cả', query: {} },
+  { label: 'Dưới 500K', query: { price_max: 500000 } },
+  { label: '500K - 1M', query: { price_min: 500000, price_max: 1000000 } },
+  { label: '1M - 2M', query: { price_min: 1000000, price_max: 2000000 } },
+  { label: '2M - 5M', query: { price_min: 2000000, price_max: 5000000 } },
+  { label: 'Trên 5M', query: { price_min: 5000000 } },
+];
+
+// Custom price range inputs
+const customPriceMin = ref<number | null>(null);
+const customPriceMax = ref<number | null>(null);
+
+// Check if a price range is active based on current URL query
+const isPriceRangeActive = (range: { label: string; query: Record<string, any> }): boolean => {
+  const currentQuery = route.query;
+  
+  // "Tất cả" is active if no price filters
+  if (Object.keys(range.query).length === 0) {
+    return !currentQuery.price_min && !currentQuery.price_max;
+  }
+  
+  const minMatch = range.query.price_min 
+    ? String(currentQuery.price_min) === String(range.query.price_min)
+    : !currentQuery.price_min;
+  const maxMatch = range.query.price_max
+    ? String(currentQuery.price_max) === String(range.query.price_max)
+    : !currentQuery.price_max;
+    
+  return minMatch && maxMatch;
+};
+
+// Check if any price filter is active
+const hasActivePriceFilter = computed(() => {
+  return !!route.query.price_min || !!route.query.price_max;
+});
+
+// Apply custom price filter
+const applyCustomPriceFilter = () => {
+  const query: Record<string, any> = { ...route.query };
+  
+  if (customPriceMin.value) {
+    query.price_min = customPriceMin.value;
+  } else {
+    delete query.price_min;
+  }
+  
+  if (customPriceMax.value) {
+    query.price_max = customPriceMax.value;
+  } else {
+    delete query.price_max;
+  }
+  
+  router.push({ path: '/productlist', query });
+};
+
+// Clear all price filters
+const clearPriceFilter = () => {
+  const query = { ...route.query };
+  delete query.price_min;
+  delete query.price_max;
+  customPriceMin.value = null;
+  customPriceMax.value = null;
+  router.push({ path: '/productlist', query });
 };
 
 // Khởi tạo auth store và fetch data khi component mount
@@ -642,5 +803,37 @@ onMounted(async () => {
   border-color: rgba(0, 212, 255, 0.5) !important;
   background: rgba(0, 212, 255, 0.15) !important;
   color: #00d4ff !important;
+}
+
+/* Price Filter Menu */
+.price-filter-menu {
+  background: rgba(18, 18, 26, 0.98) !important;
+  border: 1px solid rgba(0, 212, 255, 0.2) !important;
+  box-shadow: 
+    0 15px 50px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(0, 212, 255, 0.1) !important;
+}
+
+.price-chip {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.price-chip:hover {
+  border-color: rgba(0, 212, 255, 0.5) !important;
+  background: rgba(0, 212, 255, 0.15) !important;
+  color: #00d4ff !important;
+}
+
+.price-input :deep(.v-field) {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.price-input :deep(.v-field:focus-within) {
+  border-color: rgba(0, 212, 255, 0.5);
+}
+
+.price-input :deep(.v-field__suffix) {
+  color: rgba(255, 255, 255, 0.5);
 }
 </style>

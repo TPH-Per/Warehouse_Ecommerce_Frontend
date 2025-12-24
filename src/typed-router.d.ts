@@ -23,6 +23,7 @@ declare module 'vue-router/auto-routes' {
     '/HomePage': RouteRecordInfo<'/HomePage', '/HomePage', Record<never, never>, Record<never, never>>,
     '/LoginPage': RouteRecordInfo<'/LoginPage', '/LoginPage', Record<never, never>, Record<never, never>>,
     '/OrderPage': RouteRecordInfo<'/OrderPage', '/OrderPage', Record<never, never>, Record<never, never>>,
+    '/OrderSuccessPage': RouteRecordInfo<'/OrderSuccessPage', '/OrderSuccessPage', Record<never, never>, Record<never, never>>,
     '/ProductDetailPage': RouteRecordInfo<'/ProductDetailPage', '/ProductDetailPage', Record<never, never>, Record<never, never>>,
     '/ProductListPage': RouteRecordInfo<'/ProductListPage', '/ProductListPage', Record<never, never>, Record<never, never>>,
     '/ProfilePage': RouteRecordInfo<'/ProfilePage', '/ProfilePage', Record<never, never>, Record<never, never>>,
@@ -59,6 +60,10 @@ declare module 'vue-router/auto-routes' {
     }
     'src/pages/OrderPage.vue': {
       routes: '/OrderPage'
+      views: never
+    }
+    'src/pages/OrderSuccessPage.vue': {
+      routes: '/OrderSuccessPage'
       views: never
     }
     'src/pages/ProductDetailPage.vue': {

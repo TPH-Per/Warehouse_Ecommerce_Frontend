@@ -178,6 +178,25 @@ export const useProductsStore = defineStore('products', () => {
   };
 
   /**
+   * Lấy sản phẩm theo category và trả về data (cho Related Products)
+   * Không ảnh hưởng đến products state chính
+   */
+  const fetchProductsByCategory = async (categoryId: number): Promise<any[]> => {
+    try {
+      const response = await productsApi.getByCategory(categoryId);
+      const { isSuccess, items } = handleResponse(response.data);
+
+      if (isSuccess) {
+        return items || [];
+      }
+      return [];
+    } catch (err: any) {
+      console.error('fetchProductsByCategory error:', err);
+      return [];
+    }
+  };
+
+  /**
    * Tìm kiếm sản phẩm (chỉ sản phẩm có trong kho)
    */
   const searchProducts = async (keyword: string) => {
@@ -236,6 +255,7 @@ export const useProductsStore = defineStore('products', () => {
     fetchProductsInStock,
     fetchProductById,
     fetchByCategory,
+    fetchProductsByCategory, // For related products
     searchProducts,
     clearCurrentProduct,
     clearProducts,

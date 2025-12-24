@@ -19,7 +19,13 @@
         </v-col>
       </v-row>
 
-      <div v-if="filteredOrders.length === 0" class="text-center py-16 glass-card rounded-xl border-light">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="text-center py-16">
+        <v-progress-circular indeterminate color="primary" size="64" />
+        <p class="mt-4 text-medium-emphasis">Đang tải đơn hàng...</p>
+      </div>
+
+      <div v-else-if="filteredOrders.length === 0" class="text-center py-16 glass-card rounded-xl border-light">
         <v-icon size="100" color="grey-lighten-2" class="mb-4">mdi-package-variant-closed</v-icon>
         <h2 class="text-h5 font-weight-bold mb-2">Chưa có đơn hàng nào</h2>
         <p class="text-grey mb-6">Bắt đầu mua sắm để lấp đầy lịch sử đơn hàng của bạn!</p>
@@ -79,6 +85,7 @@
                   variant="tonal" 
                   rounded="pill" 
                   size="small"
+                  @click="cancelOrder(order.id)"
                 >
                   Hủy đơn
                 </v-btn>
@@ -212,50 +219,29 @@
         </v-card>
       </div>
     </v-container>
+
+    <!-- Snackbar -->
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" location="top">
+      {{ snackbar.text }}
+    </v-snackbar>
   </v-main>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { ordersApi, type Order } from '@/api/orders.api';
+import { useAuthStore } from '@/stores/auth.store';
 
-interface OrderItem {
-  product_variant_id: number;
-  product_name: string;
-  variant_name: string;
-  quantity: number;
-  price_at_purchase: number;
-  subtotal: number;
-  image_url?: string;
-}
+const router = useRouter();
+const authStore = useAuthStore();
 
-interface Payment {
-  id: number;
-  method_name: string;
-  status: string;
-  amount: number;
-  transaction_code?: string;
-}
-
-interface Order {
-  id: number;
-  order_code: string;
-  status: string;
-  shipping_recipient_name: string;
-  shipping_recipient_phone: string;
-  shipping_address: string;
-  sub_total: number;
-  shipping_fee: number;
-  discount_amount: number;
-  total_amount: number;
-  branch_id?: number;
-  branch_name?: string;
-  created_at: string;
-  items: OrderItem[];
-  payment?: Payment;
-}
-
+// ========== STATE ==========
+const isLoading = ref(true);
+const orders = ref<Order[]>([]);
 const statusFilter = ref('all');
 const expandedOrders = ref<number[]>([]);
+const snackbar = ref({ show: false, text: '', color: 'success' });
 
 const statusOptions = [
   { title: 'Tất cả đơn hàng', value: 'all' },
@@ -266,120 +252,88 @@ const statusOptions = [
   { title: 'Đã hủy', value: 'cancelled' }
 ];
 
-// Mock Data theo cấu trúc database
-const orders = ref<Order[]>([
-  {
-    id: 1,
-    order_code: 'ORD-2024121501',
-    status: 'processing',
-    shipping_recipient_name: 'Nguyễn Văn A',
-    shipping_recipient_phone: '0912345678',
-    shipping_address: '123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-    sub_total: 2450000,
-    shipping_fee: 30000,
-    discount_amount: 100000,
-    total_amount: 2380000,
-    branch_id: 1,
-    branch_name: 'Chi nhánh Quận 1',
-    created_at: '2024-12-15T10:30:00',
-    items: [
-      {
-        product_variant_id: 1,
-        product_name: 'Gojo Satoru Figure 1/7',
-        variant_name: 'Phiên bản giới hạn',
-        quantity: 1,
-        price_at_purchase: 1950000,
-        subtotal: 1950000,
-        image_url: 'https://placehold.co/100x100?text=Gojo'
-      },
-      {
-        product_variant_id: 2,
-        product_name: 'Acrylic Stand Jujutsu Kaisen',
-        variant_name: 'Set 5 nhân vật',
-        quantity: 1,
-        price_at_purchase: 500000,
-        subtotal: 500000,
-        image_url: 'https://placehold.co/100x100?text=Stand'
-      }
-    ],
-    payment: {
-      id: 1,
-      method_name: 'VNPay',
-      status: 'completed',
-      amount: 2380000,
-      transaction_code: 'VNP20241215103012'
-    }
-  },
-  {
-    id: 2,
-    order_code: 'ORD-2024120101',
-    status: 'delivered',
-    shipping_recipient_name: 'Nguyễn Văn A',
-    shipping_recipient_phone: '0912345678',
-    shipping_address: '123 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-    sub_total: 1250000,
-    shipping_fee: 0,
-    discount_amount: 0,
-    total_amount: 1250000,
-    branch_id: 2,
-    branch_name: 'Chi nhánh Quận 3',
-    created_at: '2024-12-01T14:20:00',
-    items: [
-      {
-        product_variant_id: 3,
-        product_name: 'Nendoroid Power',
-        variant_name: 'Standard Edition',
-        quantity: 1,
-        price_at_purchase: 1250000,
-        subtotal: 1250000,
-        image_url: 'https://placehold.co/100x100?text=Power'
-      }
-    ],
-    payment: {
-      id: 2,
-      method_name: 'COD',
-      status: 'completed',
-      amount: 1250000
-    }
-  },
-  {
-    id: 3,
-    order_code: 'ORD-2024121801',
-    status: 'pending',
-    shipping_recipient_name: 'Trần Thị B',
-    shipping_recipient_phone: '0987654321',
-    shipping_address: '456 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
-    sub_total: 3500000,
-    shipping_fee: 50000,
-    discount_amount: 200000,
-    total_amount: 3350000,
-    branch_id: 1,
-    branch_name: 'Chi nhánh Quận 1',
-    created_at: '2024-12-18T09:15:00',
-    items: [
-      {
-        product_variant_id: 4,
-        product_name: 'Rem Figure 1/4 Scale',
-        variant_name: 'Wedding Dress Ver.',
-        quantity: 1,
-        price_at_purchase: 3500000,
-        subtotal: 3500000,
-        image_url: 'https://placehold.co/100x100?text=Rem'
-      }
-    ],
-    payment: {
-      id: 3,
-      method_name: 'Momo',
-      status: 'pending',
-      amount: 3350000
-    }
-  }
-]);
-
+// ========== COMPUTED ==========
 const filteredOrders = computed(() => {
   if (statusFilter.value === 'all') return orders.value;
   return orders.value.filter(o => o.status === statusFilter.value);
 });
+
+// ========== METHODS ==========
+const fetchOrders = async () => {
+  isLoading.value = true;
+  try {
+    const response = await ordersApi.getMyOrders();
+    if (response.data?.Success && response.data.Data) {
+      // Map API response to Order interface
+      orders.value = response.data.Data.map((o: any) => ({
+        id: o.Id,
+        order_code: o.OrderCode,
+        user_id: o.UserId,
+        status: o.Status,
+        shipping_recipient_name: o.ShippingRecipientName,
+        shipping_recipient_phone: o.ShippingRecipientPhone,
+        shipping_address: o.ShippingAddress,
+        sub_total: o.SubTotal,
+        shipping_fee: o.ShippingFee,
+        discount_amount: o.DiscountAmount,
+        total_amount: o.TotalAmount,
+        branch_id: o.BranchId,
+        branch_name: o.BranchName,
+        created_at: o.CreatedAt,
+        updated_at: o.UpdatedAt,
+        items: (o.Items || []).map((i: any) => ({
+          product_variant_id: i.ProductVariantId,
+          product_id: i.ProductId,
+          product_name: i.ProductName,
+          variant_name: i.VariantName,
+          quantity: i.Quantity,
+          price_at_purchase: i.PriceAtPurchase,
+          subtotal: i.Subtotal,
+          image_url: i.ImageUrl
+        })),
+        payment: o.Payment ? {
+          id: o.Payment.Id,
+          payment_method_id: o.Payment.PaymentMethodId,
+          method_name: o.Payment.MethodName,
+          status: o.Payment.Status,
+          amount: o.Payment.Amount,
+          transaction_code: o.Payment.TransactionCode,
+          created_at: o.Payment.CreatedAt
+        } : undefined
+      }));
+    } else if (!response.data?.IsAuthenticated) {
+      router.push('/login?redirect=/orders');
+    }
+  } catch (error) {
+    console.error('Failed to fetch orders:', error);
+    showSnackbar('Không thể tải danh sách đơn hàng', 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const cancelOrder = async (orderId: number) => {
+  if (!confirm('Bạn có chắc muốn hủy đơn hàng này?')) return;
+  
+  try {
+    const response = await ordersApi.cancelOrder(orderId);
+    if (response.data?.Success) {
+      showSnackbar('Đã hủy đơn hàng thành công', 'success');
+      // Update local state
+      const order = orders.value.find(o => o.id === orderId);
+      if (order) order.status = 'cancelled';
+    } else {
+      showSnackbar(response.data?.Message || 'Không thể hủy đơn hàng', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to cancel order:', error);
+    showSnackbar('Có lỗi xảy ra khi hủy đơn hàng', 'error');
+  }
+};
+
+const showSnackbar = (text: string, color: string = 'success') => {
+  snackbar.value = { show: true, text, color };
+};
 
 const getStatusColor = (status: string) => {
   const map: Record<string, string> = {
@@ -424,6 +378,7 @@ const formatPaymentStatus = (status?: string) => {
 };
 
 const formatDate = (dateStr: string) => {
+  if (!dateStr) return 'N/A';
   const date = new Date(dateStr);
   return date.toLocaleDateString('vi-VN', {
     day: '2-digit',
@@ -445,6 +400,15 @@ const toggleDetails = (id: number) => {
 };
 
 const isExpanded = (id: number) => expandedOrders.value.includes(id);
+
+// ========== LIFECYCLE ==========
+onMounted(() => {
+  if (!authStore.isAuthenticated) {
+    router.push('/login?redirect=/orders');
+    return;
+  }
+  fetchOrders();
+});
 </script>
 
 <style scoped>

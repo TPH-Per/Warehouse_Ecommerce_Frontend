@@ -109,19 +109,19 @@
               {{ product.name }}
             </h1>
 
-            <!-- Rating & Stats -->
+            <!-- Rating & Stats (dynamic from reviews) -->
             <div class="d-flex align-center flex-wrap ga-4 mb-6">
               <div class="d-flex align-center">
                 <v-rating
-                  :model-value="product.rating"
-                  color="warning"
+                  :model-value="averageRating"
+                  color="amber"
                   density="compact"
                   size="small"
                   readonly
                   half-increments
                 />
-                <span class="ml-2 text-body-2 font-weight-medium">{{ product.rating }}</span>
-                <span class="text-body-2 text-medium-emphasis ml-1">({{ product.reviewCount }} đánh giá)</span>
+                <span class="ml-2 text-body-2 font-weight-bold text-amber">{{ averageRating.toFixed(1) }}</span>
+                <span class="text-body-2 text-medium-emphasis ml-1">({{ reviews.length }} đánh giá)</span>
               </div>
               <v-divider vertical class="mx-1" />
               <span class="text-body-2">
@@ -390,6 +390,252 @@
         </v-col>
       </v-row>
     </v-container>
+
+    <!-- Related Products Carousel -->
+    <v-container v-if="relatedProducts.length > 0" class="related-products-section py-8">
+      <div class="d-flex align-center justify-space-between mb-6">
+        <div>
+          <h2 class="text-h5 font-weight-bold mb-1">
+            <v-icon color="primary" class="mr-2">mdi-lightning-bolt</v-icon>
+            Sản phẩm liên quan
+          </h2>
+          <p class="text-medium-emphasis text-body-2">Những sản phẩm cùng danh mục bạn có thể quan tâm</p>
+        </div>
+        <v-btn 
+          variant="text" 
+          color="primary" 
+          :to="`/productlist?categoryId=${product?.category?.id}`"
+          class="text-none"
+        >
+          Xem tất cả
+          <v-icon end>mdi-arrow-right</v-icon>
+        </v-btn>
+      </div>
+
+      <!-- Carousel Container -->
+      <v-slide-group show-arrows class="related-carousel">
+        <v-slide-group-item v-for="relatedProduct in relatedProducts" :key="getProductId(relatedProduct)">
+          <v-card 
+            class="related-product-card ma-2 rounded-xl" 
+            width="220"
+            variant="flat"
+            @click="goToProduct(getProductId(relatedProduct))"
+          >
+            <v-img
+              :src="getRelatedProductImage(relatedProduct)"
+              height="220"
+              cover
+              class="related-product-image"
+            >
+              <div class="fill-height d-flex align-end">
+                <v-chip
+                  v-if="getRelatedProductDiscount(relatedProduct) > 0"
+                  color="error"
+                  size="x-small"
+                  class="ma-2"
+                >
+                  -{{ getRelatedProductDiscount(relatedProduct) }}%
+                </v-chip>
+              </div>
+            </v-img>
+
+            <v-card-text class="pa-3">
+              <h4 class="related-product-name text-body-2 font-weight-medium mb-2">
+                {{ relatedProduct.Name || relatedProduct.name }}
+              </h4>
+              
+              <div class="d-flex align-center ga-2 mb-2">
+                <span class="text-primary font-weight-bold">
+                  {{ formatPrice(getRelatedProductPrice(relatedProduct)) }}
+                </span>
+                <span 
+                  v-if="getRelatedProductOriginalPrice(relatedProduct)" 
+                  class="text-decoration-line-through text-medium-emphasis text-caption"
+                >
+                  {{ formatPrice(getRelatedProductOriginalPrice(relatedProduct)) }}
+                </span>
+              </div>
+
+              <div class="d-flex align-center">
+                <v-icon size="x-small" color="amber">mdi-star</v-icon>
+                <span class="text-caption text-medium-emphasis ml-1">
+                  {{ relatedProduct.Rating || relatedProduct.rating || 0 }}
+                </span>
+                <span class="text-caption text-medium-emphasis mx-1">•</span>
+                <span class="text-caption text-medium-emphasis">
+                  Đã bán {{ relatedProduct.SoldCount || relatedProduct.soldCount || 0 }}
+                </span>
+              </div>
+            </v-card-text>
+
+            <v-overlay
+              :model-value="true"
+              contained
+              class="align-center justify-center product-overlay"
+              scrim="transparent"
+            >
+              <v-btn 
+                color="primary" 
+                variant="flat" 
+                size="small" 
+                rounded="lg"
+                class="px-4"
+              >
+                <v-icon start size="small">mdi-eye</v-icon>
+                Xem ngay
+              </v-btn>
+            </v-overlay>
+          </v-card>
+        </v-slide-group-item>
+      </v-slide-group>
+
+      <!-- Loading state for related products -->
+      <div v-if="isLoadingRelated" class="d-flex justify-center py-8">
+        <v-progress-circular indeterminate color="primary" />
+      </div>
+    </v-container>
+
+    <!-- Reviews Section -->
+    <v-container class="reviews-section py-8">
+      <div class="d-flex align-center justify-space-between mb-6">
+        <div>
+          <h2 class="text-h5 font-weight-bold mb-1">
+            <v-icon color="amber" class="mr-2">mdi-star</v-icon>
+            Đánh giá sản phẩm
+          </h2>
+          <p class="text-medium-emphasis text-body-2">
+            {{ reviews.length }} đánh giá • Trung bình {{ averageRating.toFixed(1) }}/5 sao
+          </p>
+        </div>
+      </div>
+
+      <!-- Review Stats -->
+      <v-row class="mb-6">
+        <v-col cols="12" md="4">
+          <v-card class="review-stats-card rounded-xl pa-6 text-center" variant="outlined">
+            <div class="text-h2 font-weight-bold text-primary mb-2">{{ averageRating.toFixed(1) }}</div>
+            <v-rating
+              :model-value="averageRating"
+              color="amber"
+              half-increments
+              readonly
+              size="small"
+              class="mb-2"
+            />
+            <div class="text-caption text-medium-emphasis">{{ reviews.length }} đánh giá</div>
+          </v-card>
+        </v-col>
+        
+        <v-col cols="12" md="8">
+          <!-- Write Review Form -->
+          <v-card v-if="canWriteReview" class="write-review-card rounded-xl pa-4" variant="outlined">
+            <div class="text-subtitle-1 font-weight-bold mb-3">
+              <v-icon start color="primary">mdi-pencil</v-icon>
+              Viết đánh giá của bạn
+            </div>
+            
+            <div class="mb-3">
+              <div class="text-caption text-medium-emphasis mb-1">Đánh giá</div>
+              <v-rating
+                v-model="newReview.rating"
+                color="amber"
+                hover
+                size="large"
+              />
+            </div>
+            
+            <v-textarea
+              v-model="newReview.comment"
+              label="Nhận xét của bạn"
+              variant="outlined"
+              rounded="lg"
+              rows="3"
+              counter
+              maxlength="500"
+              class="mb-3"
+            />
+            
+            <v-btn
+              color="primary"
+              rounded="lg"
+              :loading="isSubmittingReview"
+              :disabled="!newReview.rating || !newReview.comment.trim()"
+              @click="submitReview"
+            >
+              <v-icon start>mdi-send</v-icon>
+              Gửi đánh giá
+            </v-btn>
+          </v-card>
+          
+          <!-- Login prompt for guests -->
+          <v-card v-else-if="!authStore.isAuthenticated" class="write-review-card rounded-xl pa-6 text-center" variant="outlined">
+            <v-icon size="48" color="primary" class="mb-3">mdi-account-question</v-icon>
+            <div class="text-subtitle-1 font-weight-bold mb-2">Đăng nhập để đánh giá</div>
+            <p class="text-caption text-medium-emphasis mb-4">Bạn cần đăng nhập để viết đánh giá cho sản phẩm này</p>
+            <v-btn to="/login" color="primary" variant="outlined" rounded="lg">
+              Đăng nhập
+            </v-btn>
+          </v-card>
+          
+          <!-- Already reviewed or not purchased -->
+          <v-card v-else class="write-review-card rounded-xl pa-6 text-center" variant="outlined">
+            <v-icon size="48" color="info" class="mb-3">mdi-information</v-icon>
+            <div class="text-subtitle-1 font-weight-bold mb-2">
+              {{ hasReviewed ? 'Bạn đã đánh giá sản phẩm này' : 'Chỉ khách hàng đã mua mới có thể đánh giá' }}
+            </div>
+            <p class="text-caption text-medium-emphasis">
+              {{ hasReviewed ? 'Cảm ơn bạn đã chia sẻ đánh giá!' : 'Hãy mua sản phẩm để có thể viết đánh giá.' }}
+            </p>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- Reviews List -->
+      <div v-if="isLoadingReviews" class="text-center py-8">
+        <v-progress-circular indeterminate color="primary" />
+      </div>
+
+      <div v-else-if="reviews.length === 0" class="text-center py-8">
+        <v-icon size="64" color="grey" class="mb-4">mdi-comment-text-outline</v-icon>
+        <p class="text-medium-emphasis">Chưa có đánh giá nào cho sản phẩm này</p>
+      </div>
+
+      <v-card v-else class="reviews-list-card rounded-xl" variant="outlined">
+        <v-list class="bg-transparent">
+          <template v-for="(review, index) in reviews" :key="index">
+            <v-list-item class="py-4">
+              <template v-slot:prepend>
+                <v-avatar color="primary" size="40">
+                  <span class="text-caption font-weight-bold">{{ getReviewerInitials(review) }}</span>
+                </v-avatar>
+              </template>
+              
+              <v-list-item-title class="font-weight-bold mb-1">
+                {{ getReviewerName(review) }}
+              </v-list-item-title>
+              
+              <template v-slot:subtitle>
+                <div class="d-flex align-center ga-2 mb-2">
+                  <v-rating
+                    :model-value="getReviewRating(review)"
+                    color="amber"
+                    density="compact"
+                    half-increments
+                    readonly
+                    size="x-small"
+                  />
+                  <span class="text-caption text-medium-emphasis">
+                    {{ formatReviewDate(review) }}
+                  </span>
+                </div>
+                <p class="text-body-2 review-comment">{{ getReviewComment(review) }}</p>
+              </template>
+            </v-list-item>
+            <v-divider v-if="index < reviews.length - 1" />
+          </template>
+        </v-list>
+      </v-card>
+    </v-container>
     </template>
   </div>
 </template>
@@ -464,6 +710,33 @@ const quantity = ref(1);
 const isInWishlist = ref(false);
 const selectedBranchId = ref<number>(1);
 const selectedVariantId = ref<number | null>(null);
+
+// Related products
+const relatedProducts = ref<any[]>([]);
+const isLoadingRelated = ref(false);
+
+// Reviews
+const reviews = ref<any[]>([]);
+const isLoadingReviews = ref(false);
+const isSubmittingReview = ref(false);
+const canWriteReview = ref(false);
+const hasReviewed = ref(false);
+const newReview = ref({
+  rating: 0,
+  comment: '',
+});
+
+// Helper function for review rating (needed by computed below)
+const getReviewRating = (r: any): number => {
+  return r.Rating ?? r.rating ?? 0;
+};
+
+// Average rating computed
+const averageRating = computed(() => {
+  if (reviews.value.length === 0) return 0;
+  const total = reviews.value.reduce((sum, r) => sum + getReviewRating(r), 0);
+  return total / reviews.value.length;
+});
 
 // ========== COMPUTED: PRODUCT DATA ==========
 // Lấy product từ store - hỗ trợ cả PascalCase và camelCase
@@ -574,6 +847,46 @@ const formattedDescription = computed(() => {
     .replace(/\n/g, '<br>');
 });
 
+// ========== REVIEWS METHODS (defined before watchers) ==========
+import { getProductReviews, createReview } from '@/api/reviews.api';
+import apiClient from '@/api/index';
+
+// Fetch reviews for product
+const fetchReviews = async (productId: number) => {
+  isLoadingReviews.value = true;
+  try {
+    const response = await getProductReviews(productId);
+    const data = response.data.Data || response.data.data || [];
+    reviews.value = data;
+    console.log(`📝 Loaded ${reviews.value.length} reviews for product ${productId}`);
+  } catch (error) {
+    console.error('Error loading reviews:', error);
+    reviews.value = [];
+  } finally {
+    isLoadingReviews.value = false;
+  }
+};
+
+// Check if current user can write a review
+const checkCanReview = async (productId: number) => {
+  if (!authStore.isAuthenticated) {
+    canWriteReview.value = false;
+    return;
+  }
+  
+  try {
+    const response = await apiClient.get(`/reviews/can-review/${productId}`);
+    const data = response.data;
+    canWriteReview.value = data.CanReview ?? data.canReview ?? false;
+    hasReviewed.value = data.HasReviewed ?? data.hasReviewed ?? false;
+    console.log(`📝 Can review: ${canWriteReview.value}, Has reviewed: ${hasReviewed.value}`);
+  } catch (error) {
+    console.warn('Can-review API not available, using fallback');
+    canWriteReview.value = authStore.isAuthenticated;
+    hasReviewed.value = false;
+  }
+};
+
 // ========== WATCHERS ==========
 
 // Watch variant change to update image và fetch stock
@@ -635,12 +948,177 @@ watch(() => product.value, async (newProduct) => {
         }
       }
     }
+    
+    // Fetch related products từ cùng category
+    if (newProduct.category?.id) {
+      fetchRelatedProducts(newProduct.category.id, newProduct.id);
+    }
+    
+    // Fetch reviews for this product
+    fetchReviews(newProduct.id);
+    checkCanReview(newProduct.id);
   }
 }, { immediate: true });
 
 // ========== METHODS ==========
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+};
+
+// ========== RELATED PRODUCTS METHODS ==========
+// Helper to get product ID from both PascalCase and camelCase
+const getProductId = (p: any): number => {
+  return p.Id || p.id || 0;
+};
+
+const goToProduct = (productId: number) => {
+  if (!productId) {
+    console.error('Invalid productId:', productId);
+    return;
+  }
+  router.push({ path: '/product', query: { id: productId.toString() } });
+};
+
+const getRelatedProductImage = (p: any): string => {
+  // First try direct ImageUrl on product (from in-stock API)
+  let imgUrl = p.ImageUrl || p.image_url;
+  
+  // If not found, try from Variants array
+  if (!imgUrl) {
+    const variants = p.Variants || p.variants || [];
+    if (variants.length > 0) {
+      imgUrl = variants[0].ImageUrl || variants[0].image_url;
+    }
+  }
+  
+  if (!imgUrl) return PLACEHOLDER_IMAGE;
+  
+  // If already full URL, return as is
+  if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+    return imgUrl;
+  }
+  
+  // Build full URL - server serves static files from /wwwroot path
+  return `${API_BASE_URL}${imgUrl}`;
+};
+
+const getRelatedProductPrice = (p: any): number => {
+  // First try direct Price on product
+  if (p.Price !== undefined) return p.Price;
+  if (p.price !== undefined) return p.price;
+  
+  // Then try from Variants
+  const variants = p.Variants || p.variants || [];
+  if (variants.length > 0) {
+    return variants[0].Price || variants[0].price || 0;
+  }
+  return 0;
+};
+
+const getRelatedProductOriginalPrice = (p: any): number | null => {
+  // First try direct OriginalPrice on product
+  if (p.OriginalPrice !== undefined && p.OriginalPrice !== null) return p.OriginalPrice;
+  if (p.original_price !== undefined && p.original_price !== null) return p.original_price;
+  
+  // Then try from Variants
+  const variants = p.Variants || p.variants || [];
+  if (variants.length > 0) {
+    return variants[0].OriginalPrice || variants[0].original_price || null;
+  }
+  return null;
+};
+
+const getRelatedProductDiscount = (p: any): number => {
+  const price = getRelatedProductPrice(p);
+  const originalPrice = getRelatedProductOriginalPrice(p);
+  if (!originalPrice || originalPrice <= price) return 0;
+  return Math.round((1 - price / originalPrice) * 100);
+};
+
+const fetchRelatedProducts = async (categoryId: number, currentProductId: number) => {
+  isLoadingRelated.value = true;
+  try {
+    // Fetch products in stock
+    await productsStore.fetchProductsInStock();
+    
+    // Filter by same category, exclude current product, limit to 10
+    const allProducts = productsStore.products || [];
+    relatedProducts.value = allProducts
+      .filter((p: any) => {
+        const pId = p.Id || p.id;
+        const pCategoryId = p.CategoryId || p.category_id || (p.Category?.Id) || (p.category?.id);
+        // Same category, different product, not deleted
+        return pCategoryId === categoryId && pId !== currentProductId;
+      })
+      .slice(0, 10);
+      
+    console.log(`Found ${relatedProducts.value.length} related products in category ${categoryId}`);
+  } catch (error) {
+    console.error('Error fetching related products:', error);
+    relatedProducts.value = [];
+  } finally {
+    isLoadingRelated.value = false;
+  }
+};
+
+// ========== REVIEWS HELPER METHODS ==========
+// Note: imports and main functions are defined before watchers
+// Note: getReviewRating is defined earlier (before averageRating computed)
+
+const getReviewComment = (r: any): string => {
+  return r.Comment ?? r.comment ?? '';
+};
+
+const getReviewerName = (r: any): string => {
+  return r.UserName ?? r.user_name ?? r.User?.Name ?? r.user?.name ?? 'Khách hàng';
+};
+
+const getReviewerInitials = (r: any): string => {
+  const name = getReviewerName(r);
+  return name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'KH';
+};
+
+const formatReviewDate = (r: any): string => {
+  const dateStr = r.CreatedAt ?? r.created_at;
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+
+// Submit a new review
+const submitReview = async () => {
+  if (!product.value || !newReview.value.rating || !newReview.value.comment.trim()) {
+    toast.warning('Vui lòng chọn số sao và nhập nhận xét');
+    return;
+  }
+  
+  isSubmittingReview.value = true;
+  try {
+    const response = await createReview({
+      ProductId: product.value.id,
+      Rating: newReview.value.rating,
+      Comment: newReview.value.comment.trim(),
+    });
+    
+    const success = response.data.Success ?? response.data.success;
+    if (success) {
+      toast.success('Đánh giá của bạn đã được gửi thành công!');
+      // Reset form
+      newReview.value = { rating: 0, comment: '' };
+      canWriteReview.value = false;
+      hasReviewed.value = true;
+      // Reload reviews
+      await fetchReviews(product.value.id);
+    } else {
+      toast.error(response.data.Message ?? response.data.message ?? 'Có lỗi xảy ra');
+    }
+  } catch (error: any) {
+    console.error('Error submitting review:', error);
+    toast.error(error.response?.data?.Message ?? 'Không thể gửi đánh giá');
+  } finally {
+    isSubmittingReview.value = false;
+  }
 };
 
 const selectVariant = (variantId: number) => {
@@ -661,16 +1139,21 @@ const addToCart = async () => {
   // Kiểm tra đăng nhập
   if (!authStore.isAuthenticated) {
     toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng');
-    router.push({ name: 'Login', query: { redirect: route.fullPath } });
+    router.push({ path: '/login', query: { redirect: route.fullPath } });
     return;
   }
   
-  // Gọi cart store để thêm sản phẩm
+  // Gọi cart store để thêm sản phẩm (với extra fields cho optimistic update)
   const result = await cartStore.addToCart({
     productVariantId: selectedVariant.value.id,
     quantity: quantity.value,
     price: selectedVariant.value.price,
     branchId: selectedBranch.value.id,
+    // Extra fields for optimistic UI
+    branchName: selectedBranch.value.name,
+    productName: product.value?.name || '',
+    variantName: selectedVariant.value.name,
+    imageUrl: selectedVariant.value.image_url || (product.value?.images?.[0]) || '',
   });
   
   if (result.success) {
@@ -888,5 +1371,92 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 0.85em;
   color: #00d4ff;
+}
+
+/* Related Products Section */
+.related-products-section {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 212, 255, 0.02) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.related-carousel :deep(.v-slide-group__prev),
+.related-carousel :deep(.v-slide-group__next) {
+  background: rgba(0, 212, 255, 0.1) !important;
+  color: #00d4ff !important;
+  border-radius: 50%;
+}
+
+.related-carousel :deep(.v-slide-group__prev:hover),
+.related-carousel :deep(.v-slide-group__next:hover) {
+  background: rgba(0, 212, 255, 0.2) !important;
+}
+
+.related-product-card {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.related-product-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(0, 212, 255, 0.3) !important;
+  box-shadow: 0 12px 40px rgba(0, 212, 255, 0.15);
+}
+
+.related-product-card .product-overlay {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: rgba(0, 0, 0, 0.6) !important;
+}
+
+.related-product-card:hover .product-overlay {
+  opacity: 1;
+}
+
+.related-product-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  min-height: 2.8em;
+}
+
+.related-product-image {
+  transition: transform 0.4s ease;
+}
+
+.related-product-card:hover .related-product-image {
+  transform: scale(1.05);
+}
+
+/* ========== REVIEWS SECTION ========== */
+.reviews-section {
+  background: linear-gradient(180deg, rgba(0, 212, 255, 0.03) 0%, transparent 100%);
+  border-top: 1px solid rgba(0, 212, 255, 0.1);
+}
+
+.review-stats-card {
+  background: rgba(0, 212, 255, 0.05) !important;
+  border-color: rgba(0, 212, 255, 0.2) !important;
+}
+
+.write-review-card {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.reviews-list-card {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.review-comment {
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.6;
 }
 </style>

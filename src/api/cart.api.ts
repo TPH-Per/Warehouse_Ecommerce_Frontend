@@ -34,6 +34,11 @@ export interface AddToCartRequest {
     quantity: number;
     price: number;
     branchId?: number;
+    // Extra fields for optimistic UI updates (not sent to server)
+    branchName?: string;
+    productName?: string;
+    variantName?: string;
+    imageUrl?: string;
 }
 
 export interface UpdateCartRequest {

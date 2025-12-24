@@ -17,15 +17,16 @@ export interface Review {
 }
 
 export interface CreateReviewRequest {
-    product_id: number
-    rating: number
-    comment: string
+    ProductId: number
+    Rating: number
+    Comment: string
 }
 
 export interface UpdateReviewRequest {
-    rating?: number
-    comment?: string
+    Rating?: number
+    Comment?: string
 }
+
 
 // Backend returns PascalCase, but we also support camelCase
 export interface ApiResponse<T> {

@@ -166,6 +166,7 @@ export const useCartStore = defineStore('cart', () => {
 
     /**
      * Thêm sản phẩm vào giỏ hàng
+     * Optimistic Update: Add vào Pinia trước, sau đó sync lên database
      * @returns Object với success và message
      */
     const addToCart = async (data: AddToCartRequest): Promise<{ success: boolean; message: string }> => {
@@ -177,24 +178,77 @@ export const useCartStore = defineStore('cart', () => {
             };
         }
 
+        // Validate branchId
+        if (!data.branchId || data.branchId <= 0) {
+            return {
+                success: false,
+                message: 'Vui lòng chọn chi nhánh'
+            };
+        }
+
         isLoading.value = true;
         error.value = '';
+
+        // Optimistic Update: Add to local state first
+        const tempId = Date.now(); // Temporary ID
+        const tempItem: CartItem = {
+            Id: tempId,
+            UserId: authStore.user?.id || 0,
+            ProductVariantId: data.productVariantId,
+            Quantity: data.quantity,
+            Price: data.price,
+            CreatedAt: new Date().toISOString(),
+            UpdatedAt: null,
+            BranchId: data.branchId,
+            BranchName: data.branchName || 'Đang tải...',
+            ProductName: data.productName || '',
+            VariantName: data.variantName || '',
+            VariantImageUrl: data.imageUrl || '',
+        };
+
+        // Check if same variant + branch already exists
+        const existingIndex = items.value.findIndex(item =>
+            item.ProductVariantId === data.productVariantId &&
+            item.BranchId === data.branchId
+        );
+
+        if (existingIndex >= 0 && items.value[existingIndex]) {
+            // Update quantity of existing item
+            items.value[existingIndex]!.Quantity += data.quantity;
+        } else {
+            // Add new item
+            items.value.push(tempItem);
+        }
 
         try {
             const response = await cartApi.addToCart(data);
             const { isSuccess, result, message } = handleResponse(response.data);
 
             if (isSuccess) {
-                // Refresh cart sau khi add
+                // Sync with server data to get real IDs
                 await fetchCart();
                 return { success: true, message: message || 'Đã thêm vào giỏ hàng' };
             } else {
+                // Rollback: remove temp item or revert quantity
+                if (existingIndex >= 0 && items.value[existingIndex]) {
+                    items.value[existingIndex]!.Quantity -= data.quantity;
+                } else {
+                    const tempIndex = items.value.findIndex(i => i.Id === tempId);
+                    if (tempIndex >= 0) items.value.splice(tempIndex, 1);
+                }
                 return { success: false, message: message || 'Không thể thêm vào giỏ hàng' };
             }
         } catch (err: any) {
+            // Rollback on error
+            if (existingIndex >= 0 && items.value[existingIndex]) {
+                items.value[existingIndex]!.Quantity -= data.quantity;
+            } else {
+                const tempIndex = items.value.findIndex(i => i.Id === tempId);
+                if (tempIndex >= 0) items.value.splice(tempIndex, 1);
+            }
+
             // Xử lý lỗi 401 - session hết hạn
             if (err.response?.status === 401) {
-                // Clear auth state (không gọi API logout để tránh loop)
                 authStore.clearUser();
                 return {
                     success: false,

@@ -69,6 +69,11 @@ const routes = [
         component: () => import('@/pages/CheckoutPage.vue')
       },
       {
+        path: '/order-success',
+        name: 'OrderSuccess',
+        component: () => import('@/pages/OrderSuccessPage.vue')
+      },
+      {
         path: '/profile',
         name: 'Profile',
         component: () => import('@/pages/ProfilePage.vue')
@@ -76,6 +81,11 @@ const routes = [
       {
         path: '/order',
         name: 'Order',
+        component: () => import('@/pages/OrderPage.vue')
+      },
+      {
+        path: '/orders',
+        name: 'Orders',
         component: () => import('@/pages/OrderPage.vue')
       }
     ]

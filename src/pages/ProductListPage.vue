@@ -172,8 +172,12 @@
 
       <!-- Grid View -->
       <v-row v-else-if="viewMode === 'grid'">
-        <v-col v-for="product in products" :key="product.Id" cols="6" sm="4" lg="3">
-          <v-card class="product-card rounded-xl" variant="outlined">
+        <v-col v-for="product in paginatedProducts" :key="product.Id" cols="6" sm="4" lg="3">
+          <v-card 
+            class="product-card rounded-xl cursor-pointer" 
+            variant="outlined"
+            :to="`/product?id=${product.Id}`"
+          >
             <div class="image-container position-relative overflow-hidden">
               <v-img :src="getProductImage(product)" class="product-img" cover height="180">
                 <template v-slot:placeholder>
@@ -182,10 +186,16 @@
                   </v-row>
                 </template>
               </v-img>
-              <v-btn icon size="x-small" variant="flat" class="wishlist-btn position-absolute top-0 right-0 ma-2">
+              <v-btn 
+                icon 
+                size="x-small" 
+                variant="flat" 
+                class="wishlist-btn position-absolute top-0 right-0 ma-2"
+                @click.prevent.stop
+              >
                 <v-icon size="small">mdi-heart-outline</v-icon>
               </v-btn>
-              <div class="quick-actions pa-2">
+              <div class="quick-actions pa-2" @click.stop>
                 <v-btn color="primary" block rounded="lg" size="small" density="comfortable">
                   <v-icon start size="small">mdi-cart-plus</v-icon>
                   Thêm giỏ
@@ -200,7 +210,7 @@
                 <span class="text-subtitle-2 font-weight-bold neon-text-secondary">
                   {{ formatPrice(getLowestPrice(product)) }}
                 </span>
-                <v-btn :to="`/product?id=${product.Id}`" variant="text" color="primary" size="x-small" icon="mdi-eye" />
+                <v-icon color="primary" size="small">mdi-chevron-right</v-icon>
               </div>
             </v-card-text>
           </v-card>
@@ -209,8 +219,12 @@
 
       <!-- List View -->
       <v-row v-else>
-        <v-col v-for="product in products" :key="product.Id" cols="12">
-          <v-card class="product-card-list rounded-xl overflow-hidden d-flex" variant="outlined">
+        <v-col v-for="product in paginatedProducts" :key="product.Id" cols="12">
+          <v-card 
+            class="product-card-list rounded-xl overflow-hidden d-flex cursor-pointer" 
+            variant="outlined"
+            :to="`/product?id=${product.Id}`"
+          >
             <v-img
               :src="getProductImage(product)"
               cover
@@ -230,12 +244,13 @@
                 <div class="text-h6 font-weight-bold neon-text-secondary">
                   {{ formatPrice(getLowestPrice(product)) }}
                 </div>
-                <div class="d-flex ga-2">
+                <div class="d-flex ga-2" @click.stop>
                   <v-btn variant="outlined" size="small" rounded="lg">
                     <v-icon start size="small">mdi-heart-outline</v-icon>
                     Lưu
                   </v-btn>
-                  <v-btn :to="`/product?id=${product.Id}`" color="primary" size="small" rounded="lg">
+                  <v-btn color="primary" size="small" rounded="lg">
+                    <v-icon start size="small">mdi-eye</v-icon>
                     Chi tiết
                   </v-btn>
                 </div>
@@ -261,11 +276,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { useProductsStore } from '@/stores/products.store';
 import { useCategoriesStore } from '@/stores/categories.store';
 import { useSuppliersStore } from '@/stores/suppliers.store';
 import { useBranchesStore } from '@/stores/branches.store';
 import type { Product } from '@/types';
+
+// ========== ROUTER ==========
+const route = useRoute();
 
 // ========== PINIA STORES ==========
 const productsStore = useProductsStore();
@@ -282,6 +301,10 @@ const currentPage = ref(1);
 // Chi nhánh được chọn để lọc sản phẩm
 const selectedBranchId = ref<number | null>(null);
 
+// Price filter from URL
+const priceMin = ref<number | null>(null);
+const priceMax = ref<number | null>(null);
+
 const filters = ref({
   category_id: null as number | null,
   supplier_id: null as number | null,
@@ -290,10 +313,35 @@ const filters = ref({
 
 // ========== COMPUTED ==========
 // Lấy products từ store
-const products = computed(() => productsStore.products);
+const products = computed(() => {
+  let result = productsStore.products;
+  
+  // Client-side price filtering
+  if (priceMin.value || priceMax.value) {
+    result = result.filter((p: any) => {
+      const price = p.Price || p.price || 0;
+      if (priceMin.value && price < priceMin.value) return false;
+      if (priceMax.value && price > priceMax.value) return false;
+      return true;
+    });
+  }
+  
+  return result;
+});
+
 const loading = computed(() => productsStore.isLoading);
-const totalProducts = computed(() => productsStore.total);
-const totalPages = computed(() => Math.ceil(productsStore.total / 12) || 1);
+const totalProducts = computed(() => products.value.length);
+
+// Pagination config
+const itemsPerPage = 12;
+const totalPages = computed(() => Math.ceil(totalProducts.value / itemsPerPage) || 1);
+
+// Paginated products - only show current page's items
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return products.value.slice(start, end);
+});
 
 // Lấy options từ stores - Dynamic data từ API
 const categories = computed(() => categoriesStore.categoryOptions);
@@ -373,6 +421,37 @@ const getLowestPrice = (product: Product) => {
   return price || 0;
 };
 
+// Read query params from URL and apply to filters
+const applyUrlFilters = () => {
+  // IMPORTANT: Clear all filters first to prevent accumulation
+  filters.value.category_id = null;
+  filters.value.supplier_id = null;
+  filters.value.status = null;
+  priceMin.value = null;
+  priceMax.value = null;
+  searchQuery.value = '';
+  currentPage.value = 1; // Reset to first page
+  
+  // Category filter
+  const categoryParam = route.query.category || route.query.categoryId;
+  if (categoryParam) {
+    filters.value.category_id = Number(categoryParam);
+  }
+  
+  // Price filter
+  if (route.query.price_min) {
+    priceMin.value = Number(route.query.price_min);
+  }
+  if (route.query.price_max) {
+    priceMax.value = Number(route.query.price_max);
+  }
+  
+  // Search filter
+  if (route.query.search) {
+    searchQuery.value = String(route.query.search);
+  }
+};
+
 // Fetch products từ store - CHỈ LẤY SẢN PHẨM CÓ TRONG KHO
 const fetchProducts = async () => {
   // Cập nhật branch được chọn vào store
@@ -392,6 +471,8 @@ const fetchProducts = async () => {
 const clearFilters = () => {
   searchQuery.value = '';
   filters.value = { category_id: null, supplier_id: null, status: null };
+  priceMin.value = null;
+  priceMax.value = null;
   sortBy.value = 'newest';
   fetchProducts();
 };
@@ -419,16 +500,32 @@ watch(
   }
 );
 
+// Watch for URL query changes (when user clicks header filter links)
+watch(
+  () => route.query,
+  () => {
+    console.log('📍 URL query changed:', route.query);
+    applyUrlFilters();
+    fetchProducts();
+  },
+  { deep: true }
+);
+
 // ========== LIFECYCLE ==========
 onMounted(async () => {
   // Fetch tất cả data cần thiết khi component mount
   // Bao gồm cả danh sách chi nhánh để người dùng có thể lọc
   await Promise.all([
     branchesStore.fetchBranches(),
-    productsStore.fetchProducts(), // Mặc định chỉ lấy sản phẩm có trong kho
     categoriesStore.fetchCategories(),
     suppliersStore.fetchSuppliers(),
   ]);
+  
+  // Apply URL filters first
+  applyUrlFilters();
+  
+  // Then fetch products
+  await fetchProducts();
 });
 </script>
 
